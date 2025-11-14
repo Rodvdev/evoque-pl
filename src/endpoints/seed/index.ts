@@ -69,9 +69,10 @@ export const seed = async ({
   )
 
   payload.logger.info(`  Clearing ${collections.length} collections...`)
-  await Promise.all(
-    collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
-  )
+  // Run deletions sequentially to avoid deadlocks with foreign key constraints
+  for (const collection of collections) {
+    await payload.db.deleteMany({ collection, req, where: {} })
+  }
 
   payload.logger.info('  Clearing versions...')
   await Promise.all(
@@ -297,17 +298,39 @@ export const seed = async ({
 
   payload.logger.info('✅ Forms created')
   payload.logger.info('— Seeding pages...')
-  payload.logger.info('  Creating homepage...')
+  payload.logger.info('  Upserting homepage...')
 
-  // Create all pages in sequence for proper ordering
-  const homepage = await payload.create({
+  // Upsert homepage - update if exists, create if not
+  const homeData = home({ heroImage: imageHomeDoc, metaImage: image2Doc })
+  const existingHomepage = await payload.find({
     collection: 'pages',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
+    where: {
+      slug: {
+        equals: 'home',
+      },
     },
-    data: home({ heroImage: imageHomeDoc, metaImage: image2Doc }),
+    limit: 1,
+    depth: 0,
   })
+
+  const homepage = existingHomepage.docs.length > 0
+    ? await payload.update({
+        collection: 'pages',
+        id: existingHomepage.docs[0].id,
+        depth: 0,
+        context: {
+          disableRevalidate: true,
+        },
+        data: homeData,
+      })
+    : await payload.create({
+        collection: 'pages',
+        depth: 0,
+        context: {
+          disableRevalidate: true,
+        },
+        data: homeData,
+      })
 
   payload.logger.info('  Creating about page...')
   const aboutPage = await payload.create({

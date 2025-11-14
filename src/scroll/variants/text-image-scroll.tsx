@@ -6,6 +6,7 @@ import { TextColumn } from './TextColumn';
 import { ImageColumn } from './ImageColumn';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Camera } from 'lucide-react';
 
 // Register GSAP plugin
 if (typeof window !== 'undefined') {
@@ -142,8 +143,10 @@ export function TextImageScroll({
         // Calculate the continuous list offset (moves up smoothly as we scroll)
         // Each item takes up 35vh of space (30vh height + 5vh margin)
         const itemHeightVh = 35; // 30vh height + 5vh margin
-        // Start items at 10vh from top to reduce whitespace
-        const containerStartVh = 10; // Start position from top
+        // Start items at adjusted position based on whether title exists
+        // Position texts lower (down in Y) to center them in their container
+        // When title exists, start items lower to account for title space and center them
+        const containerStartVh = title ? 20 : 25; // Start position from top (lower = more down)
         // Smooth translation with slight increase for more visible movement
         const translationMultiplier = 1.1;
         
@@ -167,7 +170,7 @@ export function TextImageScroll({
         if (emptyDivRef.current) {
           // Empty div is positioned before the first item (at -1 * itemHeight)
           const emptyDivBaseYVh = -itemHeightVh;
-          // Apply smooth continuous movement using the new start position
+          // Apply smooth continuous movement using the same offset as text items
           const emptyDivYVh = listOffsetVh + emptyDivBaseYVh;
           const emptyDivY = emptyDivYVh * vhToPx;
           gsap.set(emptyDivRef.current, {
@@ -181,7 +184,8 @@ export function TextImageScroll({
           if (!textItem) return;
           
           // Check if this item should be visible (only show previous, active, and next)
-          const isVisible = index >= visibleStartIndex && index <= visibleEndIndex;
+          // First item should stay visible as long as it's on screen (progress < 0.5 or currentItemIndex is 0)
+          const isVisible = (index === 0 && (currentItemIndex === 0 || progress < 0.5)) || (index >= visibleStartIndex && index <= visibleEndIndex);
           
           // Calculate item progress (0 to 1 for each item)
           const itemStart = index / itemCount;
@@ -192,7 +196,10 @@ export function TextImageScroll({
           // Opacity: fade in/out for visible items, completely hide others
           let opacity = 0;
           if (isVisible) {
-            if (index === currentItemIndex) {
+            // First item should stay at full opacity as it scrolls up (never fade out)
+            if (index === 0) {
+              opacity = 1;
+            } else if (index === currentItemIndex) {
               // Active item: full opacity
               opacity = itemProgress < 0.5 
                 ? 0.2 + (itemProgress * 1.6)  // 0.2 to 1
@@ -212,11 +219,12 @@ export function TextImageScroll({
           
           // Y position: smooth continuous movement based on scroll progress
           // Items are positioned absolutely at index * itemHeight, then offset to position items
-          // Container start is at 10vh from top
+          // Container start is at adjusted position based on title
           // Use smooth continuous progress instead of discrete index for fluid movement
-          // Calculate offset based on the item's position relative to smooth progress
+          // All items move together smoothly as we scroll
           const itemPositionVh = index * itemHeightVh;
           // Smooth offset: start position minus the continuous progress through all items
+          // All items move up together smoothly as we scroll
           const smoothOffsetVh = containerStartVh - (smoothProgress * itemHeightVh * translationMultiplier);
           // Each item's offset is relative to its base position
           const offsetVh = smoothOffsetVh;
@@ -224,7 +232,10 @@ export function TextImageScroll({
           const yOffset = offsetVh * vhToPx;
           
           // Scale: slight scale effect when active
-          const scale = index === currentItemIndex && isVisible
+          // First item should stay at scale 1 as it scrolls up
+          const scale = (index === 0 && isVisible)
+            ? 1
+            : (index === currentItemIndex && isVisible)
             ? (itemProgress < 0.5
               ? 0.95 + (itemProgress * 0.1)  // 0.95 to 1
               : 1 - ((itemProgress - 0.5) * 0.1)) // 1 to 0.95
@@ -302,7 +313,7 @@ export function TextImageScroll({
         scrollTriggerRef.current = null;
       }
     };
-  }, [itemCount, isEditing, shouldReduceMotion, totalScrollHeight, itemScrollHeight, enableGPU, enableOnMobile, isMobile]);
+  }, [itemCount, isEditing, shouldReduceMotion, totalScrollHeight, itemScrollHeight, enableGPU, enableOnMobile, isMobile, title]);
   
   // Fallback for reduced motion or editing mode
   if (shouldReduceMotion || isEditing || itemCount === 0) {
@@ -332,12 +343,18 @@ export function TextImageScroll({
                 </div>
                 <div className="w-full md:w-1/2 flex justify-center">
                   <div className="relative w-full max-w-md aspect-square">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.icon}
-                      alt={item.title}
-                      className="object-contain w-full h-full"
-                    />
+                    {item.icon && item.icon.trim() !== '' ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={item.icon}
+                        alt={item.title}
+                        className="object-contain w-full h-full"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                        <Camera className="text-gray-400 dark:text-gray-600" size={48} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -350,25 +367,41 @@ export function TextImageScroll({
   }
   
   // Calculate container height to match scroll distance exactly
-  const containerHeight = totalScrollHeight + (typeof window !== 'undefined' ? window.innerHeight * 0.5 : 500);
+  // Use state to ensure consistent SSR/client rendering and avoid hydration mismatch
+  const [containerHeight, setContainerHeight] = useState(totalScrollHeight + 500);
+  
+  useEffect(() => {
+    // Update height after mount to match actual viewport
+    if (typeof window !== 'undefined') {
+      setContainerHeight(totalScrollHeight + window.innerHeight * 0.5);
+    }
+  }, [totalScrollHeight]);
+  
+  // Build style object without undefined values to prevent hydration mismatches
+  const containerStyle: React.CSSProperties = {
+    minHeight: `${containerHeight}px`,
+    height: `${containerHeight}px`,
+    overflow: 'visible',
+    position: 'relative',
+    top: 0,
+    marginTop: 0,
+    paddingTop: 0,
+    width: '100%',
+    ...style,  // Apply external styles after base styles
+  };
+  
+  // Remove undefined values to ensure consistent SSR/client rendering
+  Object.keys(containerStyle).forEach(key => {
+    if (containerStyle[key as keyof React.CSSProperties] === undefined) {
+      delete containerStyle[key as keyof React.CSSProperties];
+    }
+  });
   
   return (
       <div
         ref={containerRef}
         className={`relative w-full text-image-scroll-container ${className || ''}`}
-        style={{
-          minHeight: `${containerHeight}px`,
-          height: `${containerHeight}px`,
-          overflow: 'visible',
-          position: 'relative',
-          ...style,  // Apply external styles first
-          // Then override with critical styles that GSAP needs
-          top: 0,
-          marginTop: 0,
-          paddingTop: 0,
-          transform: undefined,  // Prevent external transforms from interfering
-          willChange: undefined  // Let GSAP control will-change
-        }}
+        style={containerStyle}
       >
       {/* Background */}
       {backgroundElement && (
@@ -394,12 +427,18 @@ export function TextImageScroll({
         {/* Content container */}
         <div className="relative z-10 w-full max-w-[1620px] mx-auto px-4 md:px-8 flex flex-col" style={{ minHeight: '100vh', height: title ? 'calc(100vh + 120px + 25vh + 600px)' : 'calc(100vh + 25vh + 600px)', overflow: 'visible', top: 0, paddingTop: '2rem' }}>
           {/* Title section */}
-
+          {title && (
+            <div className="w-full flex justify-center items-center mb-8 md:mb-12" style={{ paddingTop: '2rem', zIndex: 30 }}>
+              <h2 className="text-xl md:text-2xl font-semibold text-center prose prose-md md:prose-md">
+                {title}
+              </h2>
+            </div>
+          )}
           
           {/* Two-column layout: text left, image right */}
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16 flex-1 relative" style={{ overflow: 'visible', marginTop: 0 }}>
             {/* Text column - left side */}
-            <div className="w-full md:w-[50%] max-w-lg pr-0 md:pr-8 z-20" style={{ overflow: 'hidden', position: 'relative', top: 0, height: '105vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '10vh' }}>
+            <div className="w-full md:w-[50%] max-w-lg pr-0 md:pr-8 z-20" style={{ overflow: 'hidden', position: 'relative', top: 0, height: '105vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: title ? '15vh' : '20vh' }}>
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                 {/* Empty div at the start to center first item */}
                 <div 
@@ -423,8 +462,8 @@ export function TextImageScroll({
                   // Start items higher up to reduce whitespace
                   const itemHeight = 35; // 30vh height + 5vh margin
                   const translationMultiplier = 1.1; // Smooth translation with increased movement
-                  const containerStart = 10; // Start items at 10vh from top instead of centering
-                  const initialOffset = containerStart - (0 * itemHeight * translationMultiplier); // 10vh for index 0
+                  const containerStart = title ? 20 : 25; // Start items at adjusted position based on title (lower = more down)
+                  const initialOffset = containerStart - (0 * itemHeight * translationMultiplier); // Adjusted for index 0
                   return (
                     <div
                       key={item.id}
@@ -491,13 +530,13 @@ export function TextImageScroll({
               </div>
             </div>
             
-            {/* Image column - right side (pinned at top, below title) */}
+            {/* Image column - right side (pinned at center, below title) */}
             <div 
               ref={imagePanelRef}
               className="w-full md:w-[50%] max-w-md pl-0 md:pl-8 text-image-pinned-panel"
               style={{
                 position: 'absolute',
-                top: '7%',
+                top: title ? '8%' : '5%',
                 right: '2rem',
                 height: 'auto',
                 minHeight: '600px',
@@ -544,13 +583,19 @@ export function TextImageScroll({
                     }}
                   >
                     <div className="relative w-full h-full">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.icon}
-                        alt={item.title}
-                        className="object-contain w-full h-full"
-                        style={{ width: '100%', height: '100%' }}
-                      />
+                      {item.icon && item.icon.trim() !== '' ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={item.icon}
+                          alt={item.title}
+                          className="object-contain w-full h-full"
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                          <Camera className="text-gray-400 dark:text-gray-600" size={48} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

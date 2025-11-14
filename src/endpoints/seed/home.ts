@@ -147,128 +147,117 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
       },
       {
         blockName: 'Our Values',
-        blockType: 'content',
-        columns: [
-          {
-            richText: createRichTextRoot([
-              createHeadingNode('What Drives Us', 'h2'),
-            ]),
-            size: 'full',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Attitude', 'h3'),
-              createParagraphNode(
+        blockType: 'scroll',
+        variant: 'text-image-scroll',
+        richText: createRichTextRoot([
+          createHeadingNode('What Drives Us', 'h2'),
+        ]),
+        textImageSettings: {
+          items: [
+            {
+              title: 'Attitude',
+              description:
                 'No matter how upset a customer might be, agents must keep a positive attitude.',
-              ),
-            ]),
-            size: 'oneThird',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Adaptability', 'h3'),
-              createParagraphNode(
+            },
+            {
+              title: 'Adaptability',
+              description:
                 'Of the most essential customer service skills, adaptability to changing situations is crucial.',
-              ),
-            ]),
-            size: 'oneThird',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Organization', 'h3'),
-              createParagraphNode(
+            },
+            {
+              title: 'Organization',
+              description:
                 'During customer service exchanges, agents must be organized at all times to deliver timely service.',
-              ),
-            ]),
-            size: 'oneThird',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Cloud', 'h3'),
-              createParagraphNode(
+            },
+            {
+              title: 'Cloud',
+              description:
                 'Choose the technology that best meets your operational constraints while enjoying the same features.',
-              ),
-            ]),
-            size: 'half',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Process', 'h3'),
-              createParagraphNode(
+            },
+            {
+              title: 'Process',
+              description:
                 "We create SLAs geared around our partners' objectives and quality that go beyond.",
-              ),
-            ]),
-            size: 'half',
-          },
-        ],
+            },
+          ],
+          duration: 800,
+        },
+        background: {
+          type: 'none',
+        },
+        settings: {
+          enableOnMobile: true,
+          reducedMotion: false,
+          useGPU: true,
+        },
       },
       {
         blockName: 'Benefits Preview',
-        blockType: 'content',
-        columns: [
+        blockType: 'scroll',
+        variant: 'title-scale-scroll',
+        titleScaleSettings: {
+          title: 'Build Your Career With Us',
+          subtitle: 'E-Voque delivers on our promises to our employees by offering an exceptional company culture.',
+          titleAnimation: {
+            enabled: true,
+            variant: 'scale-down',
+            pinPosition: '120vh',
+            initialBackground: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
+            finalBackground: 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
+            overlayOpacity: 0.04,
+            textColor: '#FFFFFF',
+            darkTextColor: '#0A1F44',
+            initialScale: 1.8,
+            pinnedY: '42vw',
+            exitY: '50vh',
+            containerHeight: 150,
+          },
+        },
+        background: {
+          type: 'none',
+        },
+        settings: {
+          enableOnMobile: true,
+          reducedMotion: false,
+          useGPU: true,
+        },
+      },
+      {
+        blockName: 'Testimonials',
+        blockType: 'testimonial',
+        variant: 'horizontal',
+        headline: "We've Helped 200+ Members",
+        description: '',
+        testimonials: [
           {
-            richText: createRichTextRoot([
-              createHeadingNode('Build Your Career With Us', 'h2'),
-              createParagraphNode(
-                'E-Voque delivers on our promises to our employees by offering an exceptional company culture.',
-              ),
-            ]),
-            size: 'full',
+            quote: 'E-Voque has transformed our customer service operations. Their bilingual support team handles our Spanish-speaking customers with professionalism and care, significantly improving our customer satisfaction scores.',
+            author: 'Maria Rodriguez',
+            title: 'Operations Manager',
+            company: 'Tech Solutions Inc.',
           },
           {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Numerous Welfare and Benefits', 'h3'),
-              createParagraphNode(
-                'Comprehensive benefits package for all team members',
-              ),
-            ]),
-            size: 'oneThird',
+            quote: 'The interpretation services provided by E-Voque have been invaluable. They help us communicate effectively with our diverse client base, breaking down language barriers and building stronger relationships.',
+            author: 'James Chen',
+            title: 'Customer Success Director',
+            company: 'Global Services LLC',
           },
           {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Career Growth', 'h3'),
-              createParagraphNode(
-                'Clear paths for advancement and professional development',
-              ),
-            ]),
-            size: 'oneThird',
+            quote: 'Outsourcing our collections to E-Voque was one of the best decisions we made. Their multilingual team understands cultural nuances and communicates with empathy, resulting in higher recovery rates.',
+            author: 'Sarah Johnson',
+            title: 'Finance Manager',
+            company: 'Healthcare Partners',
           },
           {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('High Income and Faster Promotion', 'h3'),
-              createParagraphNode(
-                'Competitive compensation with performance-based advancement',
-              ),
-            ]),
-            size: 'oneThird',
+            quote: 'E-Voque\'s help desk support has been exceptional. They handle complex technical questions with expertise, allowing our internal team to focus on strategic initiatives. Highly recommended!',
+            author: 'David Martinez',
+            title: 'IT Director',
+            company: 'Innovation Corp',
           },
           {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Training and Coaching', 'h3'),
-              createParagraphNode(
-                'Continuous learning opportunities with expert guidance',
-              ),
-            ]),
-            size: 'half',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Teamwork Makes the Dream Work', 'h3'),
-              createParagraphNode(
-                'Collaborative culture that values every contribution',
-              ),
-            ]),
-            size: 'half',
+            quote: 'Working with E-Voque has been a game-changer for our sales team. Their trained agents understand our products and can effectively communicate value propositions in multiple languages.',
+            author: 'Emily Thompson',
+            title: 'Sales VP',
+            company: 'Enterprise Solutions',
           },
         ],
       },
@@ -277,40 +266,36 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
         blockType: 'content',
         columns: [
           {
+            contentType: 'richText',
             richText: createRichTextRoot([
               createHeadingNode('Frequently Asked Questions', 'h2'),
             ]),
             size: 'full',
           },
           {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('What is the recruitment process at E-Voque like?', 'h3'),
-              createParagraphNode(
-                'At E-Voque, the process is simple and transparent. Once you submit your application, our Talent team reviews your profile to match it with open positions. If selected, you\'ll be invited for an online interview, followed by a short language and skills evaluation. Successful candidates receive a job offer and onboarding instructions within a few days.',
-              ),
-            ]),
+            contentType: 'accordion',
             size: 'full',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('Do I need previous experience in a call center to apply?', 'h3'),
-              createParagraphNode(
-                'Not necessarily. While experience in customer service or interpretation is a plus, we also welcome applicants with strong communication skills, adaptability, and a willingness to learn. E-Voque provides full training to help you succeed in your role.',
-              ),
-            ]),
-            size: 'full',
-          },
-          {
-            enableLink: false,
-            richText: createRichTextRoot([
-              createHeadingNode('What kind of positions are available?', 'h3'),
-              createParagraphNode(
-                'We frequently recruit for roles such as: Bilingual Customer Service Representatives, Language Interpreters (English–Spanish and other pairs), Sales and Billing Support Agents, Collections and Help Desk Specialists. Remote and in-office positions may be available depending on your location.',
-              ),
-            ]),
-            size: 'full',
+            accordion: {
+              allowMultiple: false,
+              size: 'md',
+              items: [
+                {
+                  id: 'faq-recruitment-process',
+                  title: 'What is the recruitment process at E-Voque like?',
+                  content: 'At E-Voque, the process is simple and transparent. Once you submit your application, our Talent team reviews your profile to match it with open positions. If selected, you\'ll be invited for an online interview, followed by a short language and skills evaluation. Successful candidates receive a job offer and onboarding instructions within a few days.',
+                },
+                {
+                  id: 'faq-experience-required',
+                  title: 'Do I need previous experience in a call center to apply?',
+                  content: 'Not necessarily. While experience in customer service or interpretation is a plus, we also welcome applicants with strong communication skills, adaptability, and a willingness to learn. E-Voque provides full training to help you succeed in your role.',
+                },
+                {
+                  id: 'faq-positions-available',
+                  title: 'What kind of positions are available?',
+                  content: 'We frequently recruit for roles such as: Bilingual Customer Service Representatives, Language Interpreters (English–Spanish and other pairs), Sales and Billing Support Agents, Collections and Help Desk Specialists. Remote and in-office positions may be available depending on your location.',
+                },
+              ],
+            },
           },
         ],
       },

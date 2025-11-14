@@ -463,6 +463,9 @@ export const ScrollBlock: React.FC<Props> = (props) => {
   const isTabsScroll = scrollConfig.variant === 'tabs-scroll'
   const isBubbleListScroll = scrollConfig.variant === 'bubble-list-scroll'
 
+  // For text-image-scroll, don't render richText as children since title is extracted and shown at top
+  const shouldRenderContent = !isTextImageScroll
+
   return (
     <section
       className="scroll-section-enhanced"
@@ -495,7 +498,7 @@ export const ScrollBlock: React.FC<Props> = (props) => {
         isEditing={false}
         debugMode={false}
       >
-        {content}
+        {shouldRenderContent ? content : null}
       </ScrollRenderer>
     </section>
   )

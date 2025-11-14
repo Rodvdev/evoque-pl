@@ -204,6 +204,16 @@ export function convertScrollBlockToConfig(
 
     case 'text-image-scroll': {
       const textImageSettings = block.textImageSettings || {}
+      // Extract title from richText (first heading)
+      let title: string | undefined = undefined
+      if (block.richText?.root?.children) {
+        const firstHeading = block.richText.root.children.find(
+          (child: any) => child.type === 'heading'
+        )
+        if (firstHeading?.children?.[0]?.text) {
+          title = firstHeading.children[0].text
+        }
+      }
       return {
         ...baseConfig,
         items: convertScrollItems(textImageSettings.items),
@@ -214,6 +224,7 @@ export function convertScrollBlockToConfig(
           | 'slide-up'
           | 'typewriter',
         duration: textImageSettings.duration ?? 800,
+        title: title,
       } as ScrollConfig
     }
 

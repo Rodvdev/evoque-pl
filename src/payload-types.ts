@@ -248,7 +248,7 @@ export interface Page {
       };
     };
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | ScrollBlock)[];
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | ScrollBlock | TestimonialBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -541,6 +541,7 @@ export interface ContentBlock {
   columns?:
     | {
         size?: ('oneThird' | 'half' | 'twoThirds' | 'full') | null;
+        contentType?: ('richText' | 'accordion') | null;
         richText?: {
           root: {
             type: string;
@@ -556,6 +557,25 @@ export interface ContentBlock {
           };
           [k: string]: unknown;
         } | null;
+        accordion?: {
+          allowMultiple?: boolean | null;
+          size?: ('sm' | 'md' | 'lg') | null;
+          items?:
+            | {
+                /**
+                 * Unique identifier for this item
+                 */
+                id: string;
+                title: string;
+                content: string;
+                /**
+                 * Emoji or icon string
+                 */
+                icon?: string | null;
+                disabled?: boolean | null;
+              }[]
+            | null;
+        };
         enableLink?: boolean | null;
         link?: {
           type?: ('reference' | 'custom') | null;
@@ -1055,6 +1075,36 @@ export interface ScrollBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TestimonialBlock".
+ */
+export interface TestimonialBlock {
+  variant?: ('spotlight' | 'cascade' | 'flow' | 'layered' | 'horizontal') | null;
+  headline?: string | null;
+  description?: string | null;
+  testimonials?:
+    | {
+        quote: string;
+        author: string;
+        title?: string | null;
+        company?: string | null;
+        avatar?: (number | null) | Media;
+        /**
+         * Optional metric or stat to display
+         */
+        metric?: string | null;
+        /**
+         * Optional video URL for modal playback
+         */
+        videoUrl?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'testimonial';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1397,6 +1447,7 @@ export interface PagesSelect<T extends boolean = true> {
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
         scroll?: T | ScrollBlockSelect<T>;
+        testimonial?: T | TestimonialBlockSelect<T>;
       };
   meta?:
     | T
@@ -1445,7 +1496,23 @@ export interface ContentBlockSelect<T extends boolean = true> {
     | T
     | {
         size?: T;
+        contentType?: T;
         richText?: T;
+        accordion?:
+          | T
+          | {
+              allowMultiple?: T;
+              size?: T;
+              items?:
+                | T
+                | {
+                    id?: T;
+                    title?: T;
+                    content?: T;
+                    icon?: T;
+                    disabled?: T;
+                  };
+            };
         enableLink?: T;
         link?:
           | T
@@ -1690,6 +1757,29 @@ export interface ScrollBlockSelect<T extends boolean = true> {
         enableOnMobile?: T;
         reducedMotion?: T;
         useGPU?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TestimonialBlock_select".
+ */
+export interface TestimonialBlockSelect<T extends boolean = true> {
+  variant?: T;
+  headline?: T;
+  description?: T;
+  testimonials?:
+    | T
+    | {
+        quote?: T;
+        author?: T;
+        title?: T;
+        company?: T;
+        avatar?: T;
+        metric?: T;
+        videoUrl?: T;
+        id?: T;
       };
   id?: T;
   blockName?: T;

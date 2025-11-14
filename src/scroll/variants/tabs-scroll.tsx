@@ -192,6 +192,7 @@ export function TabsScroll({
   
   // Get items from config
   const items: ScrollItem[] = useMemo(() => config.items || [], [config.items]);
+  const title = config.title;
   
   // Track image load errors
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
@@ -574,6 +575,11 @@ export function TabsScroll({
           </div>
         )}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-16">
+          {title && (
+            <h2 className="text-xl md:text-2xl font-semibold text-center mb-12 prose prose-md md:prose-md">
+              {title}
+            </h2>
+          )}
           <div className="space-y-8">
             {items.map((item) => (
               <div key={item.id} className="bg-white rounded-2xl p-8">
@@ -644,6 +650,15 @@ export function TabsScroll({
       {children && (
         <div className="relative z-10 w-full">
           {children}
+        </div>
+      )}
+
+      {/* Title section at the top */}
+      {title && (
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
+          <h2 className="text-xl md:text-2xl font-semibold text-center prose prose-md md:prose-md">
+            {title}
+          </h2>
         </div>
       )}
 
