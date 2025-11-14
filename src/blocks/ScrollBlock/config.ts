@@ -15,6 +15,7 @@ const createBackgroundFields = (): Field[] => [
     name: 'type',
     type: 'select',
     label: 'Background Type',
+    dbName: 'bg_type',
     defaultValue: 'COLOR',
     options: [
       {
@@ -95,6 +96,7 @@ const createBackgroundFields = (): Field[] => [
     name: 'size',
     type: 'select',
     label: 'Background Size',
+    dbName: 'bg_size',
     defaultValue: 'cover',
     options: [
       {
@@ -119,6 +121,7 @@ const createBackgroundFields = (): Field[] => [
     name: 'position',
     type: 'select',
     label: 'Background Position',
+    dbName: 'bg_pos',
     defaultValue: 'center',
     options: [
       {
@@ -557,6 +560,8 @@ const titleAnimationFields: Field[] = [
     name: 'initialBackground',
     type: 'group',
     label: 'Initial Background',
+    // @ts-expect-error - dbName on groups works at runtime, but TS types don't include it
+    dbName: 'initBg',
     admin: {
       condition: (_, siblingData) => Boolean(siblingData?.enabled),
     },
@@ -566,6 +571,8 @@ const titleAnimationFields: Field[] = [
     name: 'finalBackground',
     type: 'group',
     label: 'Final Background',
+    // @ts-expect-error - dbName on groups works at runtime, but TS types don't include it
+    dbName: 'finalBg',
     admin: {
       condition: (_, siblingData) => Boolean(siblingData?.enabled),
     },
