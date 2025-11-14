@@ -56,6 +56,19 @@ export interface LandingZoneConfig {
   };
 }
 
+// Background configuration for title animation
+export interface BackgroundConfig {
+  type: 'COLOR' | 'GRADIENT' | 'SVG' | 'IMAGE' | 'VIDEO';
+  color?: string;              // For COLOR type
+  gradient?: string;           // For GRADIENT type
+  svg?: number | { id: number; url?: string; alt?: string; [key: string]: any }; // For SVG type
+  image?: number | { id: number; url?: string; alt?: string; [key: string]: any }; // For IMAGE type
+  video?: number | { id: number; url?: string; alt?: string; [key: string]: any }; // For VIDEO type
+  size?: string;               // For IMAGE/SVG/VIDEO: 'cover' | 'contain' | 'auto'
+  position?: string;           // For IMAGE/SVG/VIDEO: 'center' | 'top' | 'bottom' | 'left' | 'right'
+  opacity?: number;            // Opacity (0-1)
+}
+
 // Enhanced scroll configuration
 export interface ScrollConfig {
   variant: ScrollVariant;
@@ -103,9 +116,8 @@ export interface ScrollConfig {
     enabled: boolean;
     variant?: 'scale-down' | 'simple-fade'; // scale-down: title starts BIG (1.8x) and scales to normal (1.0x)
     pinPosition?: string;      // Final title Y position (e.g., '120vh' at start of white section = blueSectionHeight)
-    initialBackground?: string; // Dark background for title animation (0-120vh blue section)
-    finalBackground?: string;   // Light background that appears after transition (120vh+ white section)
-    cloudBackground?: string;   // Cloud background image
+    initialBackground?: BackgroundConfig; // Dark background for title animation (0-120vh blue section)
+    finalBackground?: BackgroundConfig;   // Light background that appears after transition (120vh+ white section)
     overlayOpacity?: number;    // Overlay opacity
     textColor?: string;         // Text color
     darkTextColor?: string;     // Dark text color

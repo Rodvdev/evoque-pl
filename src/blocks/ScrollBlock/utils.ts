@@ -1,5 +1,5 @@
 import type { ScrollBlock as ScrollBlockType, Media as MediaType } from '@/payload-types'
-import type { ScrollConfig, ScrollItem, LandingZoneConfig } from '@/scroll/types'
+import type { ScrollConfig, ScrollItem, LandingZoneConfig, BackgroundConfig } from '@/scroll/types'
 
 /**
  * Convert Payload block background to scroll background format
@@ -115,6 +115,78 @@ export function convertScrollItems(items?: Array<{
           : undefined,
       } as ScrollItem
     })
+}
+
+/**
+ * Convert Payload title animation background to BackgroundConfig format
+ */
+export function convertTitleAnimationBackground(
+  background?: {
+    type?: 'COLOR' | 'GRADIENT' | 'SVG' | 'IMAGE' | 'VIDEO' | null
+    color?: string | null
+    gradient?: string | null
+    svg?: number | MediaType | null
+    image?: number | MediaType | null
+    video?: number | MediaType | null
+    size?: string | null
+    position?: string | null
+    opacity?: number | null
+  } | null
+): BackgroundConfig | undefined {
+  if (!background || !background.type) {
+    return undefined
+  }
+
+  const result: BackgroundConfig = {
+    type: background.type as 'COLOR' | 'GRADIENT' | 'SVG' | 'IMAGE' | 'VIDEO',
+    size: background.size || 'cover',
+    position: background.position || 'center',
+    opacity: background.opacity ?? 1,
+  }
+
+  switch (background.type) {
+    case 'COLOR':
+      result.color = background.color || '#000000'
+      break
+    case 'GRADIENT':
+      result.gradient = background.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      break
+    case 'SVG':
+      if (background.svg) {
+        // Handle both number ID and object reference
+        if (typeof background.svg === 'object' && 'url' in background.svg && background.svg.url) {
+          result.svg = background.svg as { id: number; url?: string; alt?: string; [key: string]: any }
+        } else {
+          const svgId = typeof background.svg === 'number' ? background.svg : (background.svg as MediaType).id
+          result.svg = svgId
+        }
+      }
+      break
+    case 'IMAGE':
+      if (background.image) {
+        // Handle both number ID and object reference
+        if (typeof background.image === 'object' && 'url' in background.image && background.image.url) {
+          result.image = background.image as { id: number; url?: string; alt?: string; [key: string]: any }
+        } else {
+          const imageId = typeof background.image === 'number' ? background.image : (background.image as MediaType).id
+          result.image = imageId
+        }
+      }
+      break
+    case 'VIDEO':
+      if (background.video) {
+        // Handle both number ID and object reference
+        if (typeof background.video === 'object' && 'url' in background.video && background.video.url) {
+          result.video = background.video as { id: number; url?: string; alt?: string; [key: string]: any }
+        } else {
+          const videoId = typeof background.video === 'number' ? background.video : (background.video as MediaType).id
+          result.video = videoId
+        }
+      }
+      break
+  }
+
+  return result
 }
 
 /**
@@ -243,6 +315,48 @@ export function convertScrollBlockToConfig(
     case 'title-scale-scroll': {
       const titleScaleSettings = block.titleScaleSettings || {}
       const titleAnimation = titleScaleSettings.titleAnimation || {}
+      
+      // Convert backgrounds - handle both old string format and new structured format
+      let initialBackground: BackgroundConfig | undefined
+      let finalBackground: BackgroundConfig | undefined
+      
+      // Check if backgrounds are in new structured format
+      if (titleAnimation.initialBackground && typeof titleAnimation.initialBackground === 'object') {
+        initialBackground = convertTitleAnimationBackground(titleAnimation.initialBackground)
+      } else if (typeof titleAnimation.initialBackground === 'string') {
+        // Legacy format: assume it's a gradient string
+        initialBackground = {
+          type: 'GRADIENT',
+          gradient: titleAnimation.initialBackground,
+          opacity: 1,
+        }
+      } else {
+        // Default gradient
+        initialBackground = {
+          type: 'GRADIENT',
+          gradient: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
+          opacity: 1,
+        }
+      }
+      
+      if (titleAnimation.finalBackground && typeof titleAnimation.finalBackground === 'object') {
+        finalBackground = convertTitleAnimationBackground(titleAnimation.finalBackground)
+      } else if (typeof titleAnimation.finalBackground === 'string') {
+        // Legacy format: assume it's a gradient string
+        finalBackground = {
+          type: 'GRADIENT',
+          gradient: titleAnimation.finalBackground,
+          opacity: 1,
+        }
+      } else {
+        // Default gradient
+        finalBackground = {
+          type: 'GRADIENT',
+          gradient: 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
+          opacity: 1,
+        }
+      }
+      
       return {
         ...baseConfig,
         title: titleScaleSettings.title || 'Our Services',
@@ -253,13 +367,8 @@ export function convertScrollBlockToConfig(
               enabled: true,
               variant: (titleAnimation.variant || 'scale-down') as 'scale-down' | 'simple-fade',
               pinPosition: titleAnimation.pinPosition || '120vh',
-              initialBackground: titleAnimation.initialBackground || 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
-              finalBackground: titleAnimation.finalBackground || 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
-              cloudBackground: titleAnimation.cloudBackground
-                ? typeof titleAnimation.cloudBackground === 'number'
-                  ? `/api/media/file/${titleAnimation.cloudBackground}`
-                  : `/api/media/file/${titleAnimation.cloudBackground.id}`
-                : undefined,
+              initialBackground,
+              finalBackground,
               overlayOpacity: titleAnimation.overlayOpacity ?? 0.04,
               textColor: titleAnimation.textColor || '#FFFFFF',
               darkTextColor: titleAnimation.darkTextColor || '#0A1F44',

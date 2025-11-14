@@ -185,8 +185,7 @@ export function TextImageScroll({
           if (!textItem) return;
           
           // Check if this item should be visible (only show previous, active, and next)
-          // First item should be visible when progress is 0 or when it's the active item
-          const isVisible = (index === 0 && progress === 0) || (index >= visibleStartIndex && index <= visibleEndIndex);
+          const isVisible = index >= visibleStartIndex && index <= visibleEndIndex;
           
           // Calculate item progress (0 to 1 for each item)
           const itemStart = index / itemCount;
@@ -194,35 +193,34 @@ export function TextImageScroll({
           const itemRange = itemEnd - itemStart;
           const itemProgress = Math.max(0, Math.min(1, (progress - itemStart) / itemRange));
           
-          // Opacity: fade in/out for visible items, completely hide others
+          // Opacity: fade in/out for visible items, never reach 0
           // All texts should reach full opacity when they reach the centered position (where they pin)
           // The centered position is when itemProgress = 0.5 (middle of the item's scroll range)
-          let opacity = 0;
+          // Items start from a minimum opacity and reach full opacity, never going to 0
+          const minOpacity = 0.3; // Minimum opacity - never go below this
+          let opacity = minOpacity;
           if (isVisible) {
-            // First item should be visible at full opacity when progress is 0
-            if (index === 0 && progress === 0) {
-              opacity = 1;
-            } else if (index === currentItemIndex) {
+            if (index === currentItemIndex) {
               // Active item: reaches full opacity at centered position (itemProgress = 0.5)
-              // Fade in as it approaches center, peak at center (0.5), fade out as it leaves
+              // Fade in as it approaches center, peak at center (0.5), fade out as it leaves (but never below minOpacity)
               if (itemProgress <= 0.5) {
-                // Fade in from 0 to 1 as it approaches center (0 to 0.5)
-                opacity = itemProgress * 2; // 0 to 1
+                // Fade in from minOpacity to 1 as it approaches center (0 to 0.5)
+                opacity = minOpacity + (itemProgress * 2 * (1 - minOpacity)); // minOpacity to 1
               } else {
-                // Fade out from 1 to 0 as it leaves center (0.5 to 1)
-                opacity = 1 - ((itemProgress - 0.5) * 2); // 1 to 0
+                // Fade out from 1 to minOpacity as it leaves center (0.5 to 1)
+                opacity = 1 - ((itemProgress - 0.5) * 2 * (1 - minOpacity)); // 1 to minOpacity
               }
-              opacity = Math.max(0, Math.min(1, opacity));
+              opacity = Math.max(minOpacity, Math.min(1, opacity));
             } else {
-              // Previous or next item: reduced opacity
+              // Previous or next item: reduced opacity, but never below minOpacity
               opacity = itemProgress < 0.5 
-                ? 0.2 + (itemProgress * 0.8)  // 0.2 to 1
-                : 1 - ((itemProgress - 0.5) * 0.8); // 1 to 0.2
-              opacity = Math.max(0.2, Math.min(0.6, opacity));
+                ? minOpacity + (itemProgress * 0.7 * (1 - minOpacity))  // minOpacity to ~0.8
+                : 1 - ((itemProgress - 0.5) * 0.7 * (1 - minOpacity)); // ~0.8 to minOpacity
+              opacity = Math.max(minOpacity, Math.min(0.8, opacity));
             }
           } else {
-            // Completely hide items outside visible range
-            opacity = 0;
+            // Items outside visible range still maintain minimum opacity
+            opacity = minOpacity;
           }
           
           // Y position: smooth continuous movement based on scroll progress

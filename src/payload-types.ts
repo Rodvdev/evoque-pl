@@ -941,9 +941,40 @@ export interface ScrollBlock {
        * Position where title lands (e.g., 120vh)
        */
       pinPosition?: string | null;
-      initialBackground?: string | null;
-      finalBackground?: string | null;
-      cloudBackground?: (number | null) | Media;
+      initialBackground?: {
+        type: 'COLOR' | 'GRADIENT' | 'SVG' | 'IMAGE' | 'VIDEO';
+        /**
+         * Enter a hex color (e.g., #000000) or CSS color name
+         */
+        color?: string | null;
+        /**
+         * Enter CSS gradient (e.g., linear-gradient(135deg, #667eea 0%, #764ba2 100%))
+         */
+        gradient?: string | null;
+        svg?: (number | null) | Media;
+        image?: (number | null) | Media;
+        video?: (number | null) | Media;
+        size?: ('cover' | 'contain' | 'auto') | null;
+        position?: ('center' | 'top' | 'bottom' | 'left' | 'right') | null;
+        opacity?: number | null;
+      };
+      finalBackground?: {
+        type: 'COLOR' | 'GRADIENT' | 'SVG' | 'IMAGE' | 'VIDEO';
+        /**
+         * Enter a hex color (e.g., #000000) or CSS color name
+         */
+        color?: string | null;
+        /**
+         * Enter CSS gradient (e.g., linear-gradient(135deg, #667eea 0%, #764ba2 100%))
+         */
+        gradient?: string | null;
+        svg?: (number | null) | Media;
+        image?: (number | null) | Media;
+        video?: (number | null) | Media;
+        size?: ('cover' | 'contain' | 'auto') | null;
+        position?: ('center' | 'top' | 'bottom' | 'left' | 'right') | null;
+        opacity?: number | null;
+      };
       overlayOpacity?: number | null;
       textColor?: string | null;
       darkTextColor?: string | null;
@@ -1661,9 +1692,32 @@ export interface ScrollBlockSelect<T extends boolean = true> {
               enabled?: T;
               variant?: T;
               pinPosition?: T;
-              initialBackground?: T;
-              finalBackground?: T;
-              cloudBackground?: T;
+              initialBackground?:
+                | T
+                | {
+                    type?: T;
+                    color?: T;
+                    gradient?: T;
+                    svg?: T;
+                    image?: T;
+                    video?: T;
+                    size?: T;
+                    position?: T;
+                    opacity?: T;
+                  };
+              finalBackground?:
+                | T
+                | {
+                    type?: T;
+                    color?: T;
+                    gradient?: T;
+                    svg?: T;
+                    image?: T;
+                    video?: T;
+                    size?: T;
+                    position?: T;
+                    opacity?: T;
+                  };
               overlayOpacity?: T;
               textColor?: T;
               darkTextColor?: T;

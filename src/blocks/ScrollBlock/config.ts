@@ -9,6 +9,158 @@ import {
 
 import { linkGroup } from '@/fields/linkGroup'
 
+// Reusable background configuration fields (for title animation backgrounds)
+const createBackgroundFields = (): Field[] => [
+  {
+    name: 'type',
+    type: 'select',
+    label: 'Background Type',
+    defaultValue: 'COLOR',
+    options: [
+      {
+        label: 'Color',
+        value: 'COLOR',
+      },
+      {
+        label: 'Gradient',
+        value: 'GRADIENT',
+      },
+      {
+        label: 'SVG',
+        value: 'SVG',
+      },
+      {
+        label: 'Image',
+        value: 'IMAGE',
+      },
+      {
+        label: 'Video',
+        value: 'VIDEO',
+      },
+    ],
+    required: true,
+  },
+  {
+    name: 'color',
+    type: 'text',
+    label: 'Background Color',
+    defaultValue: '#000000',
+    admin: {
+      condition: (_, siblingData) => siblingData?.type === 'COLOR',
+      description: 'Enter a hex color (e.g., #000000) or CSS color name',
+      components: {
+        Field: {
+          path: '@/components/admin/ColorPicker',
+        },
+      },
+    },
+  },
+  {
+    name: 'gradient',
+    type: 'text',
+    label: 'Gradient',
+    admin: {
+      condition: (_, siblingData) => siblingData?.type === 'GRADIENT',
+      description: 'Enter CSS gradient (e.g., linear-gradient(135deg, #667eea 0%, #764ba2 100%))',
+    },
+  },
+  {
+    name: 'svg',
+    type: 'upload',
+    label: 'SVG File',
+    relationTo: 'media',
+    admin: {
+      condition: (_, siblingData) => siblingData?.type === 'SVG',
+    },
+  },
+  {
+    name: 'image',
+    type: 'upload',
+    label: 'Background Image',
+    relationTo: 'media',
+    admin: {
+      condition: (_, siblingData) => siblingData?.type === 'IMAGE',
+    },
+  },
+  {
+    name: 'video',
+    type: 'upload',
+    label: 'Background Video',
+    relationTo: 'media',
+    admin: {
+      condition: (_, siblingData) => siblingData?.type === 'VIDEO',
+    },
+  },
+  {
+    name: 'size',
+    type: 'select',
+    label: 'Background Size',
+    defaultValue: 'cover',
+    options: [
+      {
+        label: 'Cover',
+        value: 'cover',
+      },
+      {
+        label: 'Contain',
+        value: 'contain',
+      },
+      {
+        label: 'Auto',
+        value: 'auto',
+      },
+    ],
+    admin: {
+      condition: (_, siblingData) =>
+        ['IMAGE', 'SVG', 'VIDEO'].includes(siblingData?.type),
+    },
+  },
+  {
+    name: 'position',
+    type: 'select',
+    label: 'Background Position',
+    defaultValue: 'center',
+    options: [
+      {
+        label: 'Center',
+        value: 'center',
+      },
+      {
+        label: 'Top',
+        value: 'top',
+      },
+      {
+        label: 'Bottom',
+        value: 'bottom',
+      },
+      {
+        label: 'Left',
+        value: 'left',
+      },
+      {
+        label: 'Right',
+        value: 'right',
+      },
+    ],
+    admin: {
+      condition: (_, siblingData) =>
+        ['IMAGE', 'SVG', 'VIDEO'].includes(siblingData?.type),
+    },
+  },
+  {
+    name: 'opacity',
+    type: 'number',
+    label: 'Opacity',
+    defaultValue: 1,
+    min: 0,
+    max: 1,
+    admin: {
+      condition: (_, siblingData) => siblingData?.type !== 'none',
+      step: 0.1,
+    },
+  },
+]
+
 // Background configuration fields
 const backgroundFields: Field[] = [
   {
@@ -403,30 +555,21 @@ const titleAnimationFields: Field[] = [
   },
   {
     name: 'initialBackground',
-    type: 'text',
+    type: 'group',
     label: 'Initial Background',
-    defaultValue: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
     admin: {
       condition: (_, siblingData) => Boolean(siblingData?.enabled),
     },
+    fields: createBackgroundFields(),
   },
   {
     name: 'finalBackground',
-    type: 'text',
+    type: 'group',
     label: 'Final Background',
-    defaultValue: 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
     admin: {
       condition: (_, siblingData) => Boolean(siblingData?.enabled),
     },
-  },
-  {
-    name: 'cloudBackground',
-    type: 'upload',
-    label: 'Cloud Background Image',
-    relationTo: 'media',
-    admin: {
-      condition: (_, siblingData) => Boolean(siblingData?.enabled),
-    },
+    fields: createBackgroundFields(),
   },
   {
     name: 'overlayOpacity',

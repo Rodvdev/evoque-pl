@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useRef, useEffect, useMemo, useState } from 'react';
-import { BaseScrollProps } from '../types';
+import { BaseScrollProps, BackgroundConfig } from '../types';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { getMediaUrl } from '@/utilities/getMediaUrl';
 
 // Register GSAP plugin
 if (typeof window !== 'undefined') {
@@ -70,8 +71,9 @@ export function TitleScaleScroll({
   const subtitle = config.subtitle || 'We do more than answering your calls';
   const titleAnimationEnabled = config.titleAnimation?.enabled ?? true;
 
-  // Gradient background and SVG icons configuration
-  const gradientBackground = config.titleAnimation?.initialBackground || 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)';
+  // Background configurations
+  const initialBackground = config.titleAnimation?.initialBackground;
+  const finalBackground = config.titleAnimation?.finalBackground;
   const overlayOpacity = config.titleAnimation?.overlayOpacity || 0.04;
   const textColor = config.titleAnimation?.textColor || '#FFFFFF'; // First color (white)
   const darkTextColor = config.titleAnimation?.darkTextColor || '#000000'; // Second color (black)
@@ -107,8 +109,128 @@ export function TitleScaleScroll({
   const separatorAfterEnabled = config.landingZone?.separatorAfter?.enabled ?? false;
   const separatorAfterHeight = config.landingZone?.separatorAfter?.height ?? 10;
 
-  // Fallback background if not using animation
-  const fallbackBackground = gradientBackground;
+  // Helper function to get media URL from BackgroundConfig
+  const getBackgroundMediaUrl = (media: number | { id: number; url?: string; alt?: string; [key: string]: any } | undefined): string | undefined => {
+    if (!media) return undefined;
+    if (typeof media === 'object' && 'url' in media && media.url) {
+      return getMediaUrl(media.url);
+    }
+    if (typeof media === 'number') {
+      return getMediaUrl(`/api/media/file/${media}`);
+    }
+    return undefined;
+  };
+
+  // Helper function to render a background based on BackgroundConfig
+  const renderBackground = (bgConfig: BackgroundConfig | undefined, className: string = '', style: React.CSSProperties = {}) => {
+    if (!bgConfig) {
+      return null;
+    }
+
+    const baseStyle: React.CSSProperties = {
+      position: 'absolute',
+      inset: 0,
+      ...style,
+    };
+
+    switch (bgConfig.type) {
+      case 'COLOR':
+        return (
+          <div
+            className={className}
+            style={{
+              ...baseStyle,
+              backgroundColor: bgConfig.color || '#000000',
+              opacity: bgConfig.opacity ?? 1,
+            }}
+          />
+        );
+
+      case 'GRADIENT':
+        return (
+          <div
+            className={className}
+            style={{
+              ...baseStyle,
+              background: bgConfig.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              opacity: bgConfig.opacity ?? 1,
+            }}
+          />
+        );
+
+      case 'SVG': {
+        const svgUrl = getBackgroundMediaUrl(bgConfig.svg);
+        if (!svgUrl) return null;
+        return (
+          <div
+            className={className}
+            style={{
+              ...baseStyle,
+              backgroundImage: `url(${svgUrl})`,
+              backgroundSize: bgConfig.size || 'cover',
+              backgroundPosition: bgConfig.position || 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: bgConfig.opacity ?? 1,
+            }}
+          />
+        );
+      }
+
+      case 'IMAGE': {
+        const imageUrl = getBackgroundMediaUrl(bgConfig.image);
+        if (!imageUrl) return null;
+        return (
+          <div
+            className={className}
+            style={{
+              ...baseStyle,
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: bgConfig.size || 'cover',
+              backgroundPosition: bgConfig.position || 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: bgConfig.opacity ?? 1,
+            }}
+          />
+        );
+      }
+
+      case 'VIDEO': {
+        const videoUrl = getBackgroundMediaUrl(bgConfig.video);
+        if (!videoUrl) return null;
+        return (
+          <div className={className} style={baseStyle}>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: bgConfig.size === 'contain' ? 'contain' : 'cover',
+                objectPosition: bgConfig.position || 'center',
+                opacity: bgConfig.opacity ?? 1,
+              }}
+            >
+              <source src={videoUrl} type="video/mp4" />
+            </video>
+          </div>
+        );
+      }
+
+      default:
+        return null;
+    }
+  };
+
+  // Fallback background if not using animation (use initial background or default)
+  const fallbackBackground = initialBackground?.type === 'GRADIENT' 
+    ? initialBackground.gradient 
+    : initialBackground?.type === 'COLOR'
+    ? initialBackground.color
+    : 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)';
 
   // Scroll tracking - start when section hits viewport top
   const { scrollYProgress } = useScroll({
@@ -209,6 +331,18 @@ export function TitleScaleScroll({
     ['0vh', `-${landingZoneHeight * 2}vh`] // Pushes background up by 2x landing zone height
   );
 
+  // Background transition opacity: initial fades out, final fades in (0.5-1.0)
+  const initialBackgroundOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1.0],
+    [1, 1, 0]
+  );
+  const finalBackgroundOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1.0],
+    [0, 0, 1]
+  );
+
   // Setup GSAP pinning for the section
   // Pinning ends smoothly to allow smooth transition to next section
   useEffect(() => {
@@ -251,7 +385,7 @@ export function TitleScaleScroll({
           style={{ background: fallbackBackground }}
         >
           <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-16 text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-normal mb-6 prose prose-md md:prose-md" style={{ color: textColor }}>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal mb-6 prose prose-md md:prose-md" style={{ color: textColor }}>
               {title}
             </h1>
             <p className="text-lg md:text-xl max-w-3xl mx-auto prose prose-md md:prose-md" style={{ color: textColor, opacity: 0.9 }}>
@@ -289,11 +423,39 @@ export function TitleScaleScroll({
           zIndex: 200
         }}
       >
-        {/* LAYER 1: Background - gets pushed up by landing zone */}
+        {/* LAYER 1: Background - gets pushed up by landing zone and transitions */}
         {titleAnimationEnabled ? (
           <>
-            {/* Background from seed (can be video, image, color, svg, or gradient) - gets pushed up by landing zone */}
-            {backgroundElement ? (
+            {/* Initial background - fades out as scroll progresses */}
+            {initialBackground && (
+              <motion.div
+                className="absolute inset-0 z-0"
+                style={{
+                  y: backgroundPushY,
+                  opacity: initialBackgroundOpacity,
+                  willChange: enableGPU ? 'transform, opacity' : 'auto'
+                }}
+              >
+                {renderBackground(initialBackground)}
+              </motion.div>
+            )}
+            
+            {/* Final background - fades in as scroll progresses */}
+            {finalBackground && (
+              <motion.div
+                className="absolute inset-0 z-0"
+                style={{
+                  y: backgroundPushY,
+                  opacity: finalBackgroundOpacity,
+                  willChange: enableGPU ? 'transform, opacity' : 'auto'
+                }}
+              >
+                {renderBackground(finalBackground)}
+              </motion.div>
+            )}
+
+            {/* Fallback: use backgroundElement if provided and no backgrounds configured */}
+            {!initialBackground && !finalBackground && backgroundElement && (
               <motion.div
                 className="absolute inset-0 z-0"
                 style={{
@@ -303,12 +465,14 @@ export function TitleScaleScroll({
               >
                 {backgroundElement}
               </motion.div>
-            ) : (
-              /* Fallback to config background color or black if no backgroundElement */
+            )}
+
+            {/* Ultimate fallback: black background */}
+            {!initialBackground && !finalBackground && !backgroundElement && (
               <motion.div
                 className="absolute inset-0 z-0"
                 style={{
-                  backgroundColor: config.titleAnimation?.initialBackground || '#000000',
+                  backgroundColor: '#000000',
                   y: backgroundPushY,
                   willChange: enableGPU ? 'transform' : 'auto'
                 }}
@@ -320,10 +484,10 @@ export function TitleScaleScroll({
           <div
             className="absolute inset-0 z-0"
             style={{
-              background: fallbackBackground
+              background: typeof fallbackBackground === 'string' ? fallbackBackground : '#000000'
             }}
           >
-            {backgroundElement}
+            {backgroundElement || (initialBackground && renderBackground(initialBackground))}
           </div>
         )}
 
@@ -352,7 +516,7 @@ export function TitleScaleScroll({
             >
               {/* First color text layer (fades out during transition) */}
               <motion.h2
-                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal text-center prose prose-md md:prose-md"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal text-center prose prose-md md:prose-md"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -370,7 +534,7 @@ export function TitleScaleScroll({
 
               {/* Second color text layer (fades in during transition) */}
               <motion.h2
-                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal text-center prose prose-md md:prose-md"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal text-center prose prose-md md:prose-md"
                 style={{
                   position: 'relative',
                   color: darkTextColor, // Second color (black)

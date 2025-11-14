@@ -202,8 +202,16 @@ export const home: (args: HomeArgs) => RequiredDataFromCollectionSlug<'pages'> =
             enabled: true,
             variant: 'scale-down',
             pinPosition: '120vh',
-            initialBackground: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
-            finalBackground: 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
+            initialBackground: {
+              type: 'GRADIENT',
+              gradient: 'linear-gradient(135deg, #0A1F44 0%, #1a3a6b 50%, #2c5aa0 100%)',
+              opacity: 1,
+            },
+            finalBackground: {
+              type: 'GRADIENT',
+              gradient: 'linear-gradient(to bottom right, #eff6ff, #ffffff)',
+              opacity: 1,
+            },
             overlayOpacity: 0.04,
             textColor: '#FFFFFF',
             darkTextColor: '#0A1F44',
