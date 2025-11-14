@@ -5,7 +5,7 @@ import type { TestimonialBlock as TestimonialBlockProps } from '@/payload-types'
 import TestimonialShowcaseComponent from './index'
 
 export const TestimonialBlock: React.FC<TestimonialBlockProps> = (props) => {
-  const { variant, headline, description, testimonials } = props
+  const { variant, headline, description, testimonials, centerCards } = props
 
   // Transform testimonials to match the component's expected format
   const transformedTestimonials = (testimonials || []).map((testimonial) => {
@@ -34,6 +34,7 @@ export const TestimonialBlock: React.FC<TestimonialBlockProps> = (props) => {
         headline: headline || '',
         description: description || '',
         testimonials: transformedTestimonials,
+        centerCards: centerCards ?? true,
       }}
     />
   )

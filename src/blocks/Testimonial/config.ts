@@ -268,6 +268,16 @@ export const Testimonial: Block = {
       minRows: 1,
       fields: testimonialItemFields,
     },
+    {
+      name: 'centerCards',
+      type: 'checkbox',
+      label: 'Center Cards on Screen',
+      defaultValue: true,
+      admin: {
+        description: 'Center the testimonial cards horizontally when there is extra space',
+        condition: (_, siblingData) => siblingData.variant === 'horizontal',
+      },
+    },
   ],
   labels: {
     plural: 'Testimonials',

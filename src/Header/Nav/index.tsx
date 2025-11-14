@@ -8,12 +8,24 @@ import { CMSLink } from '@/components/Link'
 import Link from 'next/link'
 import { SearchIcon } from 'lucide-react'
 
-export const HeaderNav: React.FC<{ data: HeaderType }> = ({ data }) => {
+interface HeaderNavProps {
+  data: HeaderType
+  isAuthenticated: boolean
+}
+
+export const HeaderNav: React.FC<HeaderNavProps> = ({ data, isAuthenticated }) => {
   const navItems = data?.navItems || []
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (isAuthenticated) {
+      return item.showWhenLoggedIn !== false
+    }
+    return item.showWhenLoggedOut !== false
+  })
 
   return (
     <nav className="flex gap-3 items-center">
-      {navItems.map(({ link }, i) => {
+      {visibleNavItems.map(({ link }, i) => {
         return <CMSLink key={i} {...link} appearance="link" />
       })}
       <Link href="/search">

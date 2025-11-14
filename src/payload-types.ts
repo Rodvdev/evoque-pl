@@ -1099,6 +1099,10 @@ export interface TestimonialBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Center the testimonial cards horizontally when there is extra space
+   */
+  centerCards?: boolean | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'testimonial';
@@ -1781,6 +1785,7 @@ export interface TestimonialBlockSelect<T extends boolean = true> {
         videoUrl?: T;
         id?: T;
       };
+  centerCards?: T;
   id?: T;
   blockName?: T;
 }
@@ -2250,6 +2255,50 @@ export interface Header {
           url?: string | null;
           label: string;
         };
+        /**
+         * Show this navigation item when user is logged in
+         */
+        showWhenLoggedIn?: boolean | null;
+        /**
+         * Show this navigation item when user is logged out
+         */
+        showWhenLoggedOut?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Call-to-action buttons displayed in the header
+   */
+  actionButtons?:
+    | {
+        /**
+         * Button text
+         */
+        label: string;
+        link?: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+        };
+        variant?: ('default' | 'secondary' | 'outline' | 'ghost') | null;
+        size?: ('sm' | 'default' | 'lg') | null;
+        /**
+         * Show this button when user is logged in
+         */
+        showWhenLoggedIn?: boolean | null;
+        /**
+         * Show this button when user is logged out
+         */
+        showWhenLoggedOut?: boolean | null;
         id?: string | null;
       }[]
     | null;
@@ -2279,6 +2328,50 @@ export interface Footer {
           url?: string | null;
           label: string;
         };
+        /**
+         * Show this navigation item when user is logged in
+         */
+        showWhenLoggedIn?: boolean | null;
+        /**
+         * Show this navigation item when user is logged out
+         */
+        showWhenLoggedOut?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Call-to-action buttons displayed in the footer
+   */
+  actionButtons?:
+    | {
+        /**
+         * Button text
+         */
+        label: string;
+        link?: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+        };
+        variant?: ('default' | 'secondary' | 'outline' | 'ghost') | null;
+        size?: ('sm' | 'default' | 'lg') | null;
+        /**
+         * Show this button when user is logged in
+         */
+        showWhenLoggedIn?: boolean | null;
+        /**
+         * Show this button when user is logged out
+         */
+        showWhenLoggedOut?: boolean | null;
         id?: string | null;
       }[]
     | null;
@@ -2302,6 +2395,26 @@ export interface HeaderSelect<T extends boolean = true> {
               url?: T;
               label?: T;
             };
+        showWhenLoggedIn?: T;
+        showWhenLoggedOut?: T;
+        id?: T;
+      };
+  actionButtons?:
+    | T
+    | {
+        label?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+            };
+        variant?: T;
+        size?: T;
+        showWhenLoggedIn?: T;
+        showWhenLoggedOut?: T;
         id?: T;
       };
   updatedAt?: T;
@@ -2325,6 +2438,26 @@ export interface FooterSelect<T extends boolean = true> {
               url?: T;
               label?: T;
             };
+        showWhenLoggedIn?: T;
+        showWhenLoggedOut?: T;
+        id?: T;
+      };
+  actionButtons?:
+    | T
+    | {
+        label?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+            };
+        variant?: T;
+        size?: T;
+        showWhenLoggedIn?: T;
+        showWhenLoggedOut?: T;
         id?: T;
       };
   updatedAt?: T;

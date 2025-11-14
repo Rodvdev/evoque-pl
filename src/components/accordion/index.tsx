@@ -17,68 +17,54 @@ export default function AccordionComponent({ content, styles, className = '', on
     new Set(accordionContent?.defaultOpen || [])
   );
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hasAnimated = useRef(false);
-  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const hasAnimatedItems = useRef<Set<number>>(new Set());
 
-  // Reset animation state when items change
+  // Intersection Observer for individual item scroll animations
   useEffect(() => {
-    hasAnimated.current = false;
-    setVisibleItems(new Set());
-    timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-    timeoutIdsRef.current = [];
-  }, [accordionContent?.items?.length]);
+    if (!accordionContent?.items?.length) return;
 
-  // Intersection Observer for clean scroll animations
-  useEffect(() => {
-    if (!accordionContent?.items?.length || !containerRef.current) return;
+    const observers: IntersectionObserver[] = [];
 
-    const container = containerRef.current;
+    // Create observer for each accordion item
+    itemRefs.current.forEach((ref, index) => {
+      if (!ref) return;
 
-    // Create observer for the accordion container
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !hasAnimated.current) {
-            hasAnimated.current = true;
-            
-            // Clear any existing timeouts
-            timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-            timeoutIdsRef.current = [];
-            
-            // Animate items one by one in sequence
-            accordionContent.items.forEach((_, index) => {
-              const timeoutId = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !hasAnimatedItems.current.has(index)) {
+              hasAnimatedItems.current.add(index);
+              
+              // Small delay for smooth staggered effect as items come into view
+              setTimeout(() => {
                 setVisibleItems((prev) => {
                   const newSet = new Set(prev);
                   newSet.add(index);
                   return newSet;
                 });
-              }, index * 120); // 120ms delay between each item for smooth staggered effect
+              }, 50); // Small delay for smooth appearance
               
-              timeoutIdsRef.current.push(timeoutId);
-            });
+              // Unobserve after animation starts
+              observer.unobserve(ref);
+            }
+          });
+        },
+        {
+          threshold: 0.15, // Trigger when 15% of the item is visible
+          rootMargin: '0px 0px -50px 0px', // Start animation when item is 50px from bottom of viewport
+        }
+      );
 
-            // Unobserve after animation sequence starts
-            observer.unobserve(container);
-          }
-        });
-      },
-      {
-        threshold: 0.2, // Trigger when 20% of container is visible
-        rootMargin: '0px 0px -100px 0px', // Start animation when container is 100px from bottom
-      }
-    );
+      observer.observe(ref);
+      observers.push(observer);
+    });
 
-    observer.observe(container);
-
-    // Cleanup observer and timeouts on unmount
+    // Cleanup observers on unmount
     return () => {
-      observer.disconnect();
-      timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-      timeoutIdsRef.current = [];
+      observers.forEach((observer) => observer.disconnect());
     };
-  }, [accordionContent?.items]);
+  }, [accordionContent?.items?.length]);
 
   // Get size styles
   const getSizeStyles = () => {
@@ -212,7 +198,6 @@ export default function AccordionComponent({ content, styles, className = '', on
 
   return (
     <div 
-      ref={containerRef}
       className={`accordion-component ${className}`} 
       style={{ 
         display: 'flex', 
@@ -230,15 +215,19 @@ export default function AccordionComponent({ content, styles, className = '', on
         return (
           <div
             key={item.id || `accordion-item-${index}`}
+            ref={(el) => {
+              itemRefs.current[index] = el;
+            }}
+            data-index={index}
             className="accordion-item"
             style={{
               ...variantStyles.item,
               opacity: isVisible ? 1 : 0,
               transform: isVisible 
                 ? 'translateY(0) scale(1)' 
-                : 'translateY(25px) scale(0.98)',
+                : 'translateY(30px) scale(0.97)',
               transition: isVisible 
-                ? 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' 
+                ? 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' 
                 : 'opacity 0s, transform 0s',
               pointerEvents: isVisible ? 'auto' : 'none',
             }}

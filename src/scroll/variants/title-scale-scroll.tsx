@@ -149,17 +149,18 @@ export function TitleScaleScroll({
   // PHASE 1-3: Title Y position (only goes down, never up - monotonic increase)
   // Title reaches pinnedY position and stays fixed at the end of blue zone
   // Title should remain pinned at pinnedY position, not continue to landing zone
+  // Start moving down earlier (at 0% instead of 25%)
   const titleYBase = useTransform(
     scrollYProgress,
-    [0,    0.25,   0.5,   1.0],
+    [0,    0.15,   0.4,   1.0],
     ['0vh', '0vh', pinnedYVh, pinnedYVh] // Moves to pinnedY and stays fixed at end of blue zone
   );
 
   // PHASE 1-3: Title scale - smooth transition to prevent jump
-  // Scale completes gradually from 0.25 to 0.6 to ensure smooth transition with Y movement
+  // Scale completes gradually from 0.15 to 0.5 to ensure smooth transition with Y movement
   const titleScale = useTransform(
     scrollYProgress,
-    [0,           0.25,        0.6,   1.0],
+    [0,           0.15,        0.5,   1.0],
     [initialScale, initialScale, 1.0,  1.0] // Gradual completion prevents jump
   );
 
@@ -171,29 +172,29 @@ export function TitleScaleScroll({
   );
 
   // PHASE 2: Color transition merged with moving down (white → black during descent) - smooth crossfade
-  // Starts when title begins moving down (25%) and completes by subtitle appearance (50%)
+  // Starts when title begins moving down (15%) and completes by subtitle appearance (40%)
   // Perfect overlap ensures title is always visible (white + black opacity always >= 1.0)
   const titleGreenOpacity = useTransform(
     scrollYProgress,
-    [0, 0.25, 0.4, 0.5, 1.0],
-    [1, 1, 0.5, 0, 0] // Starts fading when title moves down (25%), completes by subtitle (50%)
+    [0, 0.15, 0.3, 0.4, 1.0],
+    [1, 1, 0.5, 0, 0] // Starts fading when title moves down (15%), completes by subtitle (40%)
   );
 
   const titleBlueOpacity = useTransform(
     scrollYProgress,
-    [0.25, 0.4, 0.5, 1.0],
-    [0, 0.5, 1, 1] // Starts fading in when title moves down (25%), completes by subtitle (50%)
+    [0.15, 0.3, 0.4, 1.0],
+    [0, 0.5, 1, 1] // Starts fading in when title moves down (15%), completes by subtitle (40%)
   );
 
-  // Subtitle appears when title color starts changing (0.25) - synchronized with color change
-  const subtitleOpacity = useTransform(scrollYProgress, [0.25, 1.0], [0, 1]);
-  const subtitleY = useTransform(scrollYProgress, [0.25, 1.0], ['100%', '0%']);
+  // Subtitle appears when title color starts changing (0.15) - synchronized with color change
+  const subtitleOpacity = useTransform(scrollYProgress, [0.15, 1.0], [0, 1]);
+  const subtitleY = useTransform(scrollYProgress, [0.15, 1.0], ['100%', '0%']);
 
   // Landing zone slides up from bottom and pushes background up
-  // Starts appearing at 0.25, exactly when title color starts changing
+  // Starts appearing at 0.15, exactly when title color starts changing
   const landingZoneY = useTransform(
     scrollYProgress,
-    [0.25, 1.0],
+    [0.15, 1.0],
     [`${landingZoneHeight * 2}vh`, '0vh'] // Slides up from below viewport (2x height)
   );
 
@@ -201,10 +202,10 @@ export function TitleScaleScroll({
   // Title does not move with landing zone - it remains pinned at the end of blue zone
   const titleY = titleYBase;
 
-  // Background gets pushed up as landing zone appears (starts when color change begins at 0.25)
+  // Background gets pushed up as landing zone appears (starts when color change begins at 0.15)
   const backgroundPushY = useTransform(
     scrollYProgress,
-    [0.25, 1.0],
+    [0.15, 1.0],
     ['0vh', `-${landingZoneHeight * 2}vh`] // Pushes background up by 2x landing zone height
   );
 

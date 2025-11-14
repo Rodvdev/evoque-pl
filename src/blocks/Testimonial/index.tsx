@@ -43,6 +43,7 @@ interface TestimonialShowcaseComponentProps {
     textAlign?: 'left' | 'center' | 'right'; // Text alignment for cards only
     titleAlign?: 'left' | 'center' | 'right'; // Text alignment for title and subtitle
     showPlayButton?: boolean; // Show play button on cards (default: true)
+    centerCards?: boolean; // Center cards horizontally on screen (default: true)
     // Size configurations
     cardWidth?: number; // Card width in pixels (default: 260)
     cardHeight?: number; // Card height in pixels (default: 380)
@@ -764,6 +765,7 @@ export default function TestimonialShowcaseComponent({
       case 'horizontal-scroll':
         const cardSpacing = content?.cardSpacing || 'gap'; // Default to gap for horizontal scroll
         const hasGap = cardSpacing === 'gap';
+        const centerCards = content?.centerCards !== false; // Default to true
         
         return (
           <div className="relative w-full mx-auto" style={{ position: 'relative', zIndex: 9999 }}>
@@ -772,7 +774,7 @@ export default function TestimonialShowcaseComponent({
               className="relative -mx-2 px-2 sm:-mx-3 sm:px-3 lg:-mx-4 lg:px-4"
             >
               <div
-                className={`flex overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide scroll-smooth items-start ${hasGap ? 'gap-6' : ''}`}
+                className={`flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth items-start ${hasGap ? 'gap-6' : ''} ${centerCards ? 'justify-center' : ''}`}
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
@@ -781,6 +783,11 @@ export default function TestimonialShowcaseComponent({
                   scrollPaddingRight: '1rem',
                   position: 'relative',
                   zIndex: 9999,
+                  paddingTop: '30px', // Space for scale up and upward movement
+                  paddingBottom: '20px', // Space for scale down
+                  paddingLeft: '20px', // Space for horizontal scale expansion
+                  paddingRight: '20px', // Space for horizontal scale expansion
+                  overflowY: 'visible', // Allow cards to scale up without clipping
                 }}
               >
                 {testimonials.map((testimonial, cardIndex) => {

@@ -97,6 +97,7 @@ export function TextImageScroll({
     const finalScrollDistance = scrollDistance + extraUnpinDistance;
     
     // Pin the viewport section
+    // Use 'top top' for proper pinning behavior
     scrollTriggerRef.current = ScrollTrigger.create({
       trigger: container,
       start: 'top top',
@@ -184,8 +185,8 @@ export function TextImageScroll({
           if (!textItem) return;
           
           // Check if this item should be visible (only show previous, active, and next)
-          // First item should stay visible as long as it's on screen (progress < 0.5 or currentItemIndex is 0)
-          const isVisible = (index === 0 && (currentItemIndex === 0 || progress < 0.5)) || (index >= visibleStartIndex && index <= visibleEndIndex);
+          // First item should be visible when progress is 0 or when it's the active item
+          const isVisible = (index === 0 && progress === 0) || (index >= visibleStartIndex && index <= visibleEndIndex);
           
           // Calculate item progress (0 to 1 for each item)
           const itemStart = index / itemCount;
@@ -194,17 +195,24 @@ export function TextImageScroll({
           const itemProgress = Math.max(0, Math.min(1, (progress - itemStart) / itemRange));
           
           // Opacity: fade in/out for visible items, completely hide others
+          // All texts should reach full opacity when they reach the centered position (where they pin)
+          // The centered position is when itemProgress = 0.5 (middle of the item's scroll range)
           let opacity = 0;
           if (isVisible) {
-            // First item should stay at full opacity as it scrolls up (never fade out)
-            if (index === 0) {
+            // First item should be visible at full opacity when progress is 0
+            if (index === 0 && progress === 0) {
               opacity = 1;
             } else if (index === currentItemIndex) {
-              // Active item: full opacity
-              opacity = itemProgress < 0.5 
-                ? 0.2 + (itemProgress * 1.6)  // 0.2 to 1
-                : 1 - ((itemProgress - 0.5) * 1.6); // 1 to 0.2
-              opacity = Math.max(0.2, Math.min(1, opacity));
+              // Active item: reaches full opacity at centered position (itemProgress = 0.5)
+              // Fade in as it approaches center, peak at center (0.5), fade out as it leaves
+              if (itemProgress <= 0.5) {
+                // Fade in from 0 to 1 as it approaches center (0 to 0.5)
+                opacity = itemProgress * 2; // 0 to 1
+              } else {
+                // Fade out from 1 to 0 as it leaves center (0.5 to 1)
+                opacity = 1 - ((itemProgress - 0.5) * 2); // 1 to 0
+              }
+              opacity = Math.max(0, Math.min(1, opacity));
             } else {
               // Previous or next item: reduced opacity
               opacity = itemProgress < 0.5 
@@ -232,10 +240,8 @@ export function TextImageScroll({
           const yOffset = offsetVh * vhToPx;
           
           // Scale: slight scale effect when active
-          // First item should stay at scale 1 as it scrolls up
-          const scale = (index === 0 && isVisible)
-            ? 1
-            : (index === currentItemIndex && isVisible)
+          // Items reach full scale (1) when they're at the centered position
+          const scale = (index === currentItemIndex && isVisible)
             ? (itemProgress < 0.5
               ? 0.95 + (itemProgress * 0.1)  // 0.95 to 1
               : 1 - ((itemProgress - 0.5) * 0.1)) // 1 to 0.95
@@ -252,10 +258,10 @@ export function TextImageScroll({
           });
         });
         
-        // Show image panel when scroll starts
+        // Show image panel when scroll starts (or immediately if progress is 0)
         if (imagePanelRef.current) {
-          const panelOpacity = progress > 0 ? 1 : 0;
-          const panelVisibility = progress > 0 ? 'visible' : 'hidden';
+          const panelOpacity = progress >= 0 ? 1 : 0;
+          const panelVisibility = progress >= 0 ? 'visible' : 'hidden';
           gsap.set(imagePanelRef.current, {
             opacity: panelOpacity,
             visibility: panelVisibility
@@ -428,7 +434,7 @@ export function TextImageScroll({
         <div className="relative z-10 w-full max-w-[1620px] mx-auto px-4 md:px-8 flex flex-col" style={{ minHeight: '100vh', height: title ? 'calc(100vh + 120px + 25vh + 600px)' : 'calc(100vh + 25vh + 600px)', overflow: 'visible', top: 0, paddingTop: '2rem' }}>
           {/* Title section */}
           {title && (
-            <div className="w-full flex justify-center items-center mb-8 md:mb-12" style={{ paddingTop: '2rem', zIndex: 30 }}>
+            <div className="w-full flex justify-center items-center mb-12 md:mb-16" style={{ paddingTop: '2rem', paddingBottom: '1rem', zIndex: 30 }}>
               <h2 className="text-xl md:text-2xl font-semibold text-center prose prose-md md:prose-md">
                 {title}
               </h2>
@@ -436,9 +442,9 @@ export function TextImageScroll({
           )}
           
           {/* Two-column layout: text left, image right */}
-          <div className="flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16 flex-1 relative" style={{ overflow: 'visible', marginTop: 0 }}>
+          <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-8 flex-1 relative" style={{ overflow: 'visible', marginTop: 0 }}>
             {/* Text column - left side */}
-            <div className="w-full md:w-[50%] max-w-lg pr-0 md:pr-8 z-20" style={{ overflow: 'hidden', position: 'relative', top: 0, height: '105vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: title ? '15vh' : '20vh' }}>
+            <div className="w-full md:w-[50%] max-w-lg pr-0 md:pr-4 z-20" style={{ overflow: 'hidden', position: 'relative', top: 0, height: '105vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: title ? '15vh' : '20vh' }}>
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                 {/* Empty div at the start to center first item */}
                 <div 
@@ -533,14 +539,14 @@ export function TextImageScroll({
             {/* Image column - right side (pinned at center, below title) */}
             <div 
               ref={imagePanelRef}
-              className="w-full md:w-[50%] max-w-md pl-0 md:pl-8 text-image-pinned-panel"
+              className="w-full md:w-[50%] max-w-md pl-0 md:pl-4 text-image-pinned-panel"
               style={{
                 position: 'absolute',
-                top: title ? '8%' : '5%',
-                right: '2rem',
+                top: title ? '5%' : '2%',
+                right: '1rem',
                 height: 'auto',
                 minHeight: '600px',
-                width: 'calc(50% - 2rem)',
+                width: 'calc(50% - 1rem)',
                 maxWidth: '28rem',
                 display: 'flex',
                 alignItems: 'center',
