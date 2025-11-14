@@ -1,6 +1,6 @@
 import { RequiredDataFromCollectionSlug } from 'payload'
 
-export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
+export const applicationForm: RequiredDataFromCollectionSlug<'forms'> = {
   confirmationMessage: {
     root: {
       type: 'root',
@@ -14,7 +14,7 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
               format: 0,
               mode: 'normal',
               style: '',
-              text: 'The contact form has been submitted successfully.',
+              text: 'Thank you for your application!',
               version: 1,
             },
           ],
@@ -22,6 +22,25 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
           format: '',
           indent: 0,
           tag: 'h2',
+          version: 1,
+        },
+        {
+          type: 'paragraph',
+          children: [
+            {
+              type: 'text',
+              detail: 0,
+              format: 0,
+              mode: 'normal',
+              style: '',
+              text: 'We have received your application and our talent team will review it shortly. We will contact you within a few days if your profile matches our open positions.',
+              version: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          textFormat: 0,
           version: 1,
         },
       ],
@@ -35,7 +54,7 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
   createdAt: '2023-01-12T21:47:41.374Z',
   emails: [
     {
-      emailFrom: '"Payload" \u003Cdemo@payloadcms.com\u003E',
+      emailFrom: '"E-Voque Talent Team" <talent@e-voque.com>',
       emailTo: '{{email}}',
       message: {
         root: {
@@ -50,7 +69,7 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
                   format: 0,
                   mode: 'normal',
                   style: '',
-                  text: 'Thank you for contacting E-Voque. We have received your message and will get back to you within 24 hours.',
+                  text: 'Thank you for applying to join the E-Voque team. We have received your application and will review it shortly.',
                   version: 1,
                 },
               ],
@@ -67,13 +86,13 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
           version: 1,
         },
       },
-      subject: 'Thank you for contacting E-Voque',
+      subject: 'Thank you for your application to E-Voque',
     },
   ],
   fields: [
     {
-      name: 'name',
-      blockName: 'name',
+      name: 'firstName',
+      blockName: 'firstName',
       blockType: 'text',
       label: 'Full Name',
       required: true,
@@ -88,70 +107,59 @@ export const contactForm: RequiredDataFromCollectionSlug<'forms'> = {
       width: 100,
     },
     {
-      name: 'company',
-      blockName: 'company',
-      blockType: 'text',
-      label: 'Company Name',
-      required: false,
-      width: 100,
-    },
-    {
       name: 'phone',
       blockName: 'phone',
       blockType: 'number',
       label: 'Phone Number',
-      required: false,
+      required: true,
       width: 100,
     },
     {
-      name: 'service',
-      blockName: 'service',
+      name: 'position',
+      blockName: 'position',
       blockType: 'select',
-      label: 'Service Interest',
+      label: 'Position of Interest',
       required: true,
       width: 100,
       options: [
         {
-          label: 'Sales',
-          value: 'sales',
+          label: 'Sales Representative',
+          value: 'sales-representative',
         },
         {
-          label: 'Billing',
-          value: 'billing',
+          label: 'Billing Specialist',
+          value: 'billing-specialist',
         },
         {
-          label: 'Collections',
-          value: 'collections',
+          label: 'Collections Agent',
+          value: 'collections-agent',
         },
         {
-          label: 'Customer Service',
-          value: 'customer-service',
+          label: 'Customer Service Representative',
+          value: 'customer-service-representative',
         },
         {
-          label: 'Language Interpretation',
-          value: 'language-interpretation',
+          label: 'Interpreter',
+          value: 'interpreter',
         },
         {
-          label: 'Help Desk',
-          value: 'help-desk',
-        },
-        {
-          label: 'Other',
-          value: 'other',
+          label: 'Help Desk Technician',
+          value: 'help-desk-technician',
         },
       ],
     },
     {
-      name: 'message',
-      blockName: 'message',
+      name: 'coverLetter',
+      blockName: 'coverLetter',
       blockType: 'textarea',
-      label: 'How can we help you?',
+      label: 'Why do you want to join E-Voque?',
       required: true,
       width: 100,
     },
   ],
   redirect: undefined,
-  submitButtonLabel: 'Send Message',
-  title: 'Contact Form',
+  submitButtonLabel: 'Submit Application',
+  title: 'Application Form',
   updatedAt: '2023-01-12T21:47:41.374Z',
 }
+

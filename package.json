@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@payloadcms/admin-bar": "3.64.0",
+    "@payloadcms/db-postgres": "3.64.0",
     "@payloadcms/live-preview-react": "3.64.0",
     "@payloadcms/next": "3.64.0",
     "@payloadcms/plugin-form-builder": "3.64.0",
@@ -36,12 +37,16 @@
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-slot": "^1.0.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
+    "framer-motion": "^12.23.24",
     "geist": "^1.3.0",
     "graphql": "^16.8.2",
+    "gsap": "^3.13.0",
     "lucide-react": "^0.378.0",
     "next": "15.4.7",
     "next-sitemap": "^4.2.3",
@@ -50,10 +55,11 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "7.45.4",
+    "react-three": "^0.9.7",
     "sharp": "0.34.2",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "@payloadcms/db-postgres": "3.64.0"
+    "three": "^0.181.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

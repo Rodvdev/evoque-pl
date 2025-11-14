@@ -1,0 +1,571 @@
+'use client';
+
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { BaseScrollProps, ScrollItem } from '../types';
+import { TextColumn } from './TextColumn';
+import { ImageColumn } from './ImageColumn';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+// Register GSAP plugin
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+/**
+ * Text Image Scroll Variant - Text on left, images on right with scroll-triggered fade
+ * 
+ * ANIMATION BREAKDOWN (GSAP-based):
+ * 1. Text items fade in/out as they scroll vertically on left side
+ * 2. Images crossfade on right side (pinned position, centered vertically)
+ * 3. Smooth transitions between items using GSAP ScrollTrigger
+ * 
+ * ARCHITECTURE:
+ * - Two-column layout (text left, image right)
+ * - Image panel is pinned and centered vertically (always at center of viewport)
+ * - Each item gets scroll space based on duration config
+ * - Text scrolls vertically, images crossfade in pinned position
+ */
+export function TextImageScroll({
+  config,
+  backgroundElement,
+  className,
+  style,
+  isEditing = false,
+  children
+}: BaseScrollProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef<HTMLDivElement>(null);
+  const imagePanelRef = useRef<HTMLDivElement>(null);
+  const emptyDivRef = useRef<HTMLDivElement>(null);
+  const textItemsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const imageItemsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
+  
+  // Get items from config
+  const items: ScrollItem[] = useMemo(() => config.items || [], [config.items]);
+  const itemCount = items.length;
+  const enableGPU = config.useGPU !== false;
+  const duration = config.duration ?? 800; // Scroll distance per item in pixels
+  const title = config.title;
+  const reducedMotion = config.reducedMotion || false;
+  const enableOnMobile = config.enableOnMobile ?? true;
+  
+  // Check for reduced motion preference
+  const shouldReduceMotion = reducedMotion || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  
+  // Check for mobile
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Calculate total scroll height
+  // Each item gets duration pixels of scroll space
+  const itemScrollHeight = itemCount * duration;
+  const totalScrollHeight = itemScrollHeight;
+  
+  // Active index tracking
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  // Setup GSAP ScrollTrigger animations
+  useEffect(() => {
+    if (!containerRef.current || !pinnedRef.current || isEditing || shouldReduceMotion || itemCount === 0) {
+      return;
+    }
+    
+    // Check mobile
+    if (isMobile && !enableOnMobile) {
+      return;
+    }
+    
+    const container = containerRef.current;
+    const pinned = pinnedRef.current;
+    
+    // Calculate scroll distance for main animation
+    const scrollDistance = totalScrollHeight;
+    
+    // Add extra distance at the end to allow smooth unpinning transition
+    const extraUnpinDistance = typeof window !== 'undefined' ? window.innerHeight * 0.5 : 500;
+    const finalScrollDistance = scrollDistance + extraUnpinDistance;
+    
+    // Pin the viewport section
+    scrollTriggerRef.current = ScrollTrigger.create({
+      trigger: container,
+      start: 'top top',
+      end: `+=${finalScrollDistance}`,
+      pin: pinned,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onLeave: () => {
+        // When leaving pinned state, ensure smooth transition
+        // Don't clear transforms immediately - let ScrollTrigger handle unpinning naturally
+        // The pinSpacing should handle the spacing correctly
+      },
+      onEnterBack: () => {
+        // Smooth re-entry when scrolling back up
+        // Refresh to ensure proper pinning state
+        ScrollTrigger.refresh();
+      },
+      onLeaveBack: () => {
+        // When scrolling back up past the start, ensure clean state
+        ScrollTrigger.refresh();
+      },
+      onUpdate: (self) => {
+        const progress = self.progress;
+        
+        // Clamp progress to prevent overshooting
+        const clampedProgress = Math.min(1, Math.max(0, progress));
+        
+        // Calculate which item should be active
+        const itemProgress = clampedProgress * itemCount;
+        const currentItemIndex = Math.min(
+          Math.floor(itemProgress),
+          itemCount - 1
+        );
+        // Update state only when index actually changes to prevent unnecessary re-renders
+        if (currentItemIndex !== activeIndex) {
+          setActiveIndex(currentItemIndex);
+        }
+        
+        // Determine which items to show (previous, active, next)
+        const visibleStartIndex = Math.max(0, currentItemIndex - 1);
+        const visibleEndIndex = Math.min(itemCount - 1, currentItemIndex + 1);
+        
+        // Calculate the continuous list offset (moves up smoothly as we scroll)
+        // Each item takes up 35vh of space (30vh height + 5vh margin)
+        const itemHeightVh = 35; // 30vh height + 5vh margin
+        // Start items at 10vh from top to reduce whitespace
+        const containerStartVh = 10; // Start position from top
+        // Smooth translation with slight increase for more visible movement
+        const translationMultiplier = 1.1;
+        
+        // Convert vh to pixels for GSAP (GSAP uses pixels, not vh)
+        const vhToPx = window.innerHeight / 100;
+        const itemHeight = itemHeightVh * vhToPx;
+        const containerStart = containerStartVh * vhToPx;
+        
+        // Use smooth continuous progress instead of discrete index jumps
+        // Convert to continuous progress through items (0 to itemCount-1)
+        // Clamp to prevent going beyond the last item
+        const smoothProgress = Math.min(itemProgress, itemCount - 1);
+        const listOffsetVh = containerStartVh - (smoothProgress * itemHeightVh * translationMultiplier);
+        const listOffset = listOffsetVh * vhToPx;
+        
+        // When near the end, prepare for smooth unpinning
+        // Don't interfere with ScrollTrigger's natural unpinning mechanism
+        // The pinSpacing and extraUnpinDistance should handle the transition smoothly
+        
+        // Animate empty div (moves with the list)
+        if (emptyDivRef.current) {
+          // Empty div is positioned before the first item (at -1 * itemHeight)
+          const emptyDivBaseYVh = -itemHeightVh;
+          // Apply smooth continuous movement using the new start position
+          const emptyDivYVh = listOffsetVh + emptyDivBaseYVh;
+          const emptyDivY = emptyDivYVh * vhToPx;
+          gsap.set(emptyDivRef.current, {
+            y: emptyDivY,
+            willChange: enableGPU ? 'transform' : 'auto'
+          });
+        }
+        
+        // Animate text items
+        textItemsRef.current.forEach((textItem, index) => {
+          if (!textItem) return;
+          
+          // Check if this item should be visible (only show previous, active, and next)
+          const isVisible = index >= visibleStartIndex && index <= visibleEndIndex;
+          
+          // Calculate item progress (0 to 1 for each item)
+          const itemStart = index / itemCount;
+          const itemEnd = (index + 1) / itemCount;
+          const itemRange = itemEnd - itemStart;
+          const itemProgress = Math.max(0, Math.min(1, (progress - itemStart) / itemRange));
+          
+          // Opacity: fade in/out for visible items, completely hide others
+          let opacity = 0;
+          if (isVisible) {
+            if (index === currentItemIndex) {
+              // Active item: full opacity
+              opacity = itemProgress < 0.5 
+                ? 0.2 + (itemProgress * 1.6)  // 0.2 to 1
+                : 1 - ((itemProgress - 0.5) * 1.6); // 1 to 0.2
+              opacity = Math.max(0.2, Math.min(1, opacity));
+            } else {
+              // Previous or next item: reduced opacity
+              opacity = itemProgress < 0.5 
+                ? 0.2 + (itemProgress * 0.8)  // 0.2 to 1
+                : 1 - ((itemProgress - 0.5) * 0.8); // 1 to 0.2
+              opacity = Math.max(0.2, Math.min(0.6, opacity));
+            }
+          } else {
+            // Completely hide items outside visible range
+            opacity = 0;
+          }
+          
+          // Y position: smooth continuous movement based on scroll progress
+          // Items are positioned absolutely at index * itemHeight, then offset to position items
+          // Container start is at 10vh from top
+          // Use smooth continuous progress instead of discrete index for fluid movement
+          // Calculate offset based on the item's position relative to smooth progress
+          const itemPositionVh = index * itemHeightVh;
+          // Smooth offset: start position minus the continuous progress through all items
+          const smoothOffsetVh = containerStartVh - (smoothProgress * itemHeightVh * translationMultiplier);
+          // Each item's offset is relative to its base position
+          const offsetVh = smoothOffsetVh;
+          // Convert to pixels for GSAP
+          const yOffset = offsetVh * vhToPx;
+          
+          // Scale: slight scale effect when active
+          const scale = index === currentItemIndex && isVisible
+            ? (itemProgress < 0.5
+              ? 0.95 + (itemProgress * 0.1)  // 0.95 to 1
+              : 1 - ((itemProgress - 0.5) * 0.1)) // 1 to 0.95
+            : 0.95;
+          
+          gsap.set(textItem, {
+            opacity: opacity,
+            y: yOffset,
+            scale: scale,
+            transformOrigin: 'center center',
+            willChange: enableGPU ? 'transform, opacity' : 'auto',
+            pointerEvents: isVisible ? 'auto' : 'none',
+            visibility: isVisible ? 'visible' : 'hidden'
+          });
+        });
+        
+        // Show image panel when scroll starts
+        if (imagePanelRef.current) {
+          const panelOpacity = progress > 0 ? 1 : 0;
+          const panelVisibility = progress > 0 ? 'visible' : 'hidden';
+          gsap.set(imagePanelRef.current, {
+            opacity: panelOpacity,
+            visibility: panelVisibility
+          });
+        }
+        
+        // Animate image items (crossfade in pinned position)
+        imageItemsRef.current.forEach((imageItem, index) => {
+          if (!imageItem) return;
+          
+          // Calculate item progress (0 to 1 for each item)
+          const itemStart = index / itemCount;
+          const itemEnd = (index + 1) / itemCount;
+          const itemRange = itemEnd - itemStart;
+          const itemProgress = Math.max(0, Math.min(1, (progress - itemStart) / itemRange));
+          
+          // Opacity: crossfade between images
+          const opacity = itemProgress < 0.5
+            ? itemProgress * 2  // 0 to 1
+            : 1 - ((itemProgress - 0.5) * 2); // 1 to 0
+          
+          // Scale: slight scale effect
+          const scale = itemProgress < 0.5
+            ? 0.9 + (itemProgress * 0.1)  // 0.9 to 1
+            : 1 - ((itemProgress - 0.5) * 0.05); // 1 to 0.95
+          
+          // Rotation: subtle rotation effect
+          const rotation = itemProgress < 0.5
+            ? -5 + (itemProgress * 10)  // -5 to 0
+            : 5 * ((itemProgress - 0.5) * 2); // 0 to 5
+          
+          // Y position: slight parallax (images stay centered, slight movement)
+          const y = itemProgress < 0.5
+            ? 0
+            : -20 * ((itemProgress - 0.5) * 2);
+          
+          // Use xPercent and yPercent to maintain centering, then add y offset
+          gsap.set(imageItem, {
+            opacity: Math.max(0, Math.min(1, opacity)),
+            scale: scale,
+            rotation: rotation,
+            xPercent: -50,
+            yPercent: -50,
+            y: y,
+            transformOrigin: 'center center',
+            willChange: enableGPU ? 'transform, opacity' : 'auto'
+          });
+        });
+      }
+    });
+    
+    return () => {
+      if (scrollTriggerRef.current) {
+        scrollTriggerRef.current.kill();
+        scrollTriggerRef.current = null;
+      }
+    };
+  }, [itemCount, isEditing, shouldReduceMotion, totalScrollHeight, itemScrollHeight, enableGPU, enableOnMobile, isMobile]);
+  
+  // Fallback for reduced motion or editing mode
+  if (shouldReduceMotion || isEditing || itemCount === 0) {
+    return (
+      <div className={`relative ${className || ''}`} style={style}>
+        {backgroundElement && (
+          <div className="absolute inset-0 z-0">
+            {backgroundElement}
+          </div>
+        )}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-16">
+          {title && (
+            <h2 className="text-xl md:text-2xl font-semibold text-center mb-12 prose prose-md md:prose-md">
+              {title}
+            </h2>
+          )}
+          <div className="space-y-8">
+            {items.map((item) => (
+              <div key={item.id} className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="w-full md:w-1/2">
+                  <h3 className="text-2xl md:text-3xl font-normal mb-4 prose prose-md md:prose-md">
+                    {item.title}
+                  </h3>
+                  <p className="text-base leading-relaxed prose prose-md md:prose-md">
+                    {typeof item.description === 'string' ? item.description : String(item.description)}
+                  </p>
+                </div>
+                <div className="w-full md:w-1/2 flex justify-center">
+                  <div className="relative w-full max-w-md aspect-square">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.icon}
+                      alt={item.title}
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {children}
+      </div>
+    );
+  }
+  
+  // Calculate container height to match scroll distance exactly
+  const containerHeight = totalScrollHeight + (typeof window !== 'undefined' ? window.innerHeight * 0.5 : 500);
+  
+  return (
+      <div
+        ref={containerRef}
+        className={`relative w-full text-image-scroll-container ${className || ''}`}
+        style={{
+          minHeight: `${containerHeight}px`,
+          height: `${containerHeight}px`,
+          overflow: 'visible',
+          position: 'relative',
+          ...style,  // Apply external styles first
+          // Then override with critical styles that GSAP needs
+          top: 0,
+          marginTop: 0,
+          paddingTop: 0,
+          transform: undefined,  // Prevent external transforms from interfering
+          willChange: undefined  // Let GSAP control will-change
+        }}
+      >
+      {/* Background */}
+      {backgroundElement && (
+        <div className="absolute inset-0 z-0">
+          {backgroundElement}
+        </div>
+      )}
+      
+      {/* Pinned viewport section */}
+      <div
+        ref={pinnedRef}
+        className="relative w-full"
+        style={{
+          minHeight: '100vh',
+          height: 'auto',
+          overflow: 'visible',
+          zIndex: 10,
+          backgroundColor: 'transparent',
+          position: 'relative',
+          top: 0
+        }}
+      >
+        {/* Content container */}
+        <div className="relative z-10 w-full max-w-[1620px] mx-auto px-4 md:px-8 flex flex-col" style={{ minHeight: '100vh', height: title ? 'calc(100vh + 120px + 25vh + 600px)' : 'calc(100vh + 25vh + 600px)', overflow: 'visible', top: 0, paddingTop: '2rem' }}>
+          {/* Title section */}
+
+          
+          {/* Two-column layout: text left, image right */}
+          <div className="flex flex-col md:flex-row items-start justify-between gap-8 md:gap-16 flex-1 relative" style={{ overflow: 'visible', marginTop: 0 }}>
+            {/* Text column - left side */}
+            <div className="w-full md:w-[50%] max-w-lg pr-0 md:pr-8 z-20" style={{ overflow: 'hidden', position: 'relative', top: 0, height: '105vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '10vh' }}>
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {/* Empty div at the start to center first item */}
+                <div 
+                  ref={emptyDivRef}
+                  style={{ 
+                    minHeight: '30vh',
+                    display: 'flex', 
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'absolute',
+                    overflow: 'visible',
+                    height: '30vh',
+                    width: '100%',
+                    top: '-35vh',
+                    marginBottom: '5vh'
+                  }} 
+                />
+                {items.map((item, itemIndex) => {
+                  const index = itemIndex;
+                  // Calculate initial offset to position first item near top
+                  // Start items higher up to reduce whitespace
+                  const itemHeight = 35; // 30vh height + 5vh margin
+                  const translationMultiplier = 1.1; // Smooth translation with increased movement
+                  const containerStart = 10; // Start items at 10vh from top instead of centering
+                  const initialOffset = containerStart - (0 * itemHeight * translationMultiplier); // 10vh for index 0
+                  return (
+                    <div
+                      key={item.id}
+                      ref={(el) => {
+                        textItemsRef.current[index] = el;
+                      }}
+                      style={{ 
+                        minHeight: '30vh',
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'absolute',
+                        overflow: 'visible',
+                        height: '30vh',
+                        width: '100%',
+                        top: `${index * 35}vh`,
+                        marginBottom: '5vh',
+                        opacity: index === 0 ? 1 : 0,
+                        transform: index === 0 ? `translateY(${initialOffset}vh) scale(1)` : 'translateY(0px) scale(1)',
+                        willChange: enableGPU ? 'transform, opacity' : 'auto'
+                      }}
+                    >
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        <h3 className="text-2xl md:text-3xl font-normal mb-4 prose prose-md md:prose-md">
+                          {item.title}
+                        </h3>
+                        <div>
+                          {typeof item.description === 'string' ? (
+                            <p className="text-base leading-relaxed prose prose-md md:prose-md">{item.description}</p>
+                          ) : item.description && typeof item.description === 'object' && 'type' in item.description ? (
+                            (() => {
+                              const { type, content } = item.description;
+                              if (type === 'paragraph') {
+                                return <p className="text-base leading-relaxed prose prose-md md:prose-md">{content as string}</p>;
+                              }
+                              if (type === 'list') {
+                                return (
+                                  <ul className="text-base leading-relaxed space-y-2 list-disc list-inside prose prose-md md:prose-md">
+                                    {(content as string[]).map((item, idx) => (
+                                      <li key={idx}>{item}</li>
+                                    ))}
+                                  </ul>
+                                );
+                              }
+                              if (type === 'numbered-list') {
+                                return (
+                                  <ol className="text-base leading-relaxed space-y-2 list-decimal list-inside prose prose-md md:prose-md">
+                                    {(content as string[]).map((item, idx) => (
+                                      <li key={idx}>{item}</li>
+                                    ))}
+                                  </ol>
+                                );
+                              }
+                              return <p className="text-base leading-relaxed prose prose-md md:prose-md">{String(content)}</p>;
+                            })()
+                          ) : (
+                            <p className="text-base leading-relaxed prose prose-md md:prose-md">{String(item.description)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Image column - right side (pinned at top, below title) */}
+            <div 
+              ref={imagePanelRef}
+              className="w-full md:w-[50%] max-w-md pl-0 md:pl-8 text-image-pinned-panel"
+              style={{
+                position: 'absolute',
+                top: '7%',
+                right: '2rem',
+                height: 'auto',
+                minHeight: '600px',
+                width: 'calc(50% - 2rem)',
+                maxWidth: '28rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                overflow: 'visible',
+                opacity: 0,
+                visibility: 'hidden'
+              }}
+            >
+              <div 
+                className="w-full max-w-md" 
+                style={{ 
+                  aspectRatio: '1/1', 
+                  position: 'relative',
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '600px',
+                  maxWidth: '500px',
+                  overflow: 'visible'
+                }}
+              >
+                {items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    ref={(el) => {
+                      imageItemsRef.current[index] = el;
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      width: '100%',
+                      height: '100%',
+                      opacity: index === 0 ? 1 : 0,
+                      transform: 'translate(-50%, -50%) scale(1) rotate(0deg)',
+                      transformOrigin: 'center center',
+                      willChange: enableGPU ? 'transform, opacity' : 'auto',
+                      pointerEvents: activeIndex === index ? 'auto' : 'none'
+                    }}
+                  >
+                    <div className="relative w-full h-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.icon}
+                        alt={item.title}
+                        className="object-contain w-full h-full"
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Children content */}
+      {children && (
+        <div className="relative z-10">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}

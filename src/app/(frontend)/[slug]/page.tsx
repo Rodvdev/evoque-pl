@@ -102,6 +102,9 @@ const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
     limit: 1,
     pagination: false,
     overrideAccess: draft,
+    // Ensure sufficient depth to populate all nested relationships in scroll blocks
+    // (e.g., media icons in scroll items, background media, etc.)
+    depth: 3,
     where: {
       slug: {
         equals: slug,

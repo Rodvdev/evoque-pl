@@ -198,8 +198,57 @@ export interface Page {
         }[]
       | null;
     media?: (number | null) | Media;
+    /**
+     * Configure static border radius for medium impact hero
+     */
+    brRadius?: {
+      topLeft?: ('0' | '8' | '16' | '24' | '32' | '48' | '64' | '96') | null;
+      topRight?: ('0' | '8' | '16' | '24' | '32' | '48' | '64' | '96') | null;
+      bottomRight?: ('0' | '8' | '16' | '24' | '32' | '48' | '64' | '96') | null;
+      bottomLeft?: ('0' | '8' | '16' | '24' | '32' | '48' | '64' | '96') | null;
+    };
+    /**
+     * Configure scroll animations for the hero section
+     */
+    scroll?: {
+      enabled?: boolean | null;
+      type?: ('none' | 'zoom-out' | 'fade-out' | 'parallax') | null;
+      zoom?: {
+        /**
+         * Starting scale (1 = normal size)
+         */
+        zoomStart?: number | null;
+        /**
+         * Ending scale (smaller = more zoom out)
+         */
+        zoomEnd?: number | null;
+        /**
+         * How many pixels to scroll for full effect
+         */
+        duration?: number | null;
+        enableOnMobile?: boolean | null;
+        /**
+         * Border radius animates during scroll zoom effect
+         */
+        brRadius?: {
+          /**
+           * Select which corners should have border radius applied
+           */
+          corners?: {
+            topLeft?: boolean | null;
+            topRight?: boolean | null;
+            bottomRight?: boolean | null;
+            bottomLeft?: boolean | null;
+          };
+          /**
+           * Final border radius value when scroll completes
+           */
+          value?: ('0' | '8' | '16' | '24' | '32' | '48' | '64' | '96') | null;
+        };
+      };
+    };
   };
-  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock)[];
+  layout: (CallToActionBlock | ContentBlock | MediaBlock | ArchiveBlock | FormBlock | ScrollBlock)[];
   meta?: {
     title?: string | null;
     /**
@@ -780,6 +829,232 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ScrollBlock".
+ */
+export interface ScrollBlock {
+  variant: 'zoom' | 'text-image-scroll' | 'tabs-scroll' | 'title-scale-scroll' | 'bubble-list-scroll';
+  zoomSettings?: {
+    zoomStart?: number | null;
+    zoomEnd?: number | null;
+    duration?: number | null;
+    reverseDuration?: number | null;
+    borderRadius?: number | null;
+    smoothness?: number | null;
+  };
+  textImageSettings?: {
+    items?:
+      | {
+          title: string;
+          description: string;
+          icon?: (number | null) | Media;
+          enableCTA?: boolean | null;
+          cta?: {
+            /**
+             * Required when CTA is enabled
+             */
+            text?: string | null;
+            /**
+             * Required when CTA is enabled
+             */
+            href?: string | null;
+            variant?: ('primary' | 'secondary' | 'outline' | 'ghost') | null;
+            size?: ('sm' | 'md' | 'lg') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    foundationText?: string | null;
+    foundationTextVariant?: ('random-chars' | 'fade-in' | 'slide-up' | 'typewriter') | null;
+    duration?: number | null;
+  };
+  tabsSettings?: {
+    items?:
+      | {
+          title: string;
+          description: string;
+          icon?: (number | null) | Media;
+          enableCTA?: boolean | null;
+          cta?: {
+            /**
+             * Required when CTA is enabled
+             */
+            text?: string | null;
+            /**
+             * Required when CTA is enabled
+             */
+            href?: string | null;
+            variant?: ('primary' | 'secondary' | 'outline' | 'ghost') | null;
+            size?: ('sm' | 'md' | 'lg') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Higher = slower, smoother scroll
+     */
+    tabClickScrollSpeed?: number | null;
+    imagePosition?: ('left' | 'right') | null;
+    landingZone?: {
+      enabled?: boolean | null;
+      height?: number | null;
+      backgroundColor?: string | null;
+      showTitle?: boolean | null;
+      titleText?: string | null;
+      titleColor?: string | null;
+      alignment?: ('left' | 'center' | 'right') | null;
+      padding?: {
+        top?: number | null;
+        bottom?: number | null;
+        left?: number | null;
+        right?: number | null;
+      };
+    };
+    duration?: number | null;
+  };
+  titleScaleSettings?: {
+    title?: string | null;
+    subtitle?: string | null;
+    titleAnimation?: {
+      enabled?: boolean | null;
+      variant?: ('scale-down' | 'simple-fade') | null;
+      /**
+       * Position where title lands (e.g., 120vh)
+       */
+      pinPosition?: string | null;
+      initialBackground?: string | null;
+      finalBackground?: string | null;
+      cloudBackground?: (number | null) | Media;
+      overlayOpacity?: number | null;
+      textColor?: string | null;
+      darkTextColor?: string | null;
+      initialScale?: number | null;
+      pinnedY?: string | null;
+      exitY?: string | null;
+      containerHeight?: number | null;
+    };
+    landingZone?: {
+      enabled?: boolean | null;
+      height?: number | null;
+      backgroundColor?: string | null;
+      showTitle?: boolean | null;
+      titleText?: string | null;
+      titleColor?: string | null;
+      alignment?: ('left' | 'center' | 'right') | null;
+      padding?: {
+        top?: number | null;
+        bottom?: number | null;
+        left?: number | null;
+        right?: number | null;
+      };
+    };
+  };
+  bubbleListSettings?: {
+    items?:
+      | {
+          title: string;
+          description: string;
+          icon?: (number | null) | Media;
+          enableCTA?: boolean | null;
+          cta?: {
+            /**
+             * Required when CTA is enabled
+             */
+            text?: string | null;
+            /**
+             * Required when CTA is enabled
+             */
+            href?: string | null;
+            variant?: ('primary' | 'secondary' | 'outline' | 'ghost') | null;
+            size?: ('sm' | 'md' | 'lg') | null;
+          };
+          id?: string | null;
+        }[]
+      | null;
+    infinitePhaseText?: string | null;
+    duration?: number | null;
+  };
+  background: {
+    type: 'none' | 'COLOR' | 'GRADIENT' | 'IMAGE' | 'VIDEO' | 'CAROUSEL';
+    /**
+     * Enter a hex color (e.g., #000000) or CSS color name
+     */
+    color?: string | null;
+    /**
+     * Enter CSS gradient (e.g., linear-gradient(135deg, #667eea 0%, #764ba2 100%))
+     */
+    gradient?: string | null;
+    image?: (number | null) | Media;
+    video?: (number | null) | Media;
+    size?: ('cover' | 'contain' | 'auto') | null;
+    position?: ('center' | 'top' | 'bottom' | 'left' | 'right') | null;
+    opacity?: number | null;
+    carousel?: {
+      images?:
+        | {
+            image: number | Media;
+            id?: string | null;
+          }[]
+        | null;
+      speed?: number | null;
+      autoplay?: boolean | null;
+    };
+  };
+  /**
+   * Optional content that will be rendered within the scroll section
+   */
+  richText?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional call-to-action buttons
+   */
+  links?:
+    | {
+        link: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          url?: string | null;
+          label: string;
+          /**
+           * Choose how the link should be rendered.
+           */
+          appearance?: ('default' | 'outline') | null;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  settings?: {
+    enableOnMobile?: boolean | null;
+    reducedMotion?: boolean | null;
+    useGPU?: boolean | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'scroll';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1077,6 +1352,41 @@ export interface PagesSelect<T extends boolean = true> {
               id?: T;
             };
         media?: T;
+        brRadius?:
+          | T
+          | {
+              topLeft?: T;
+              topRight?: T;
+              bottomRight?: T;
+              bottomLeft?: T;
+            };
+        scroll?:
+          | T
+          | {
+              enabled?: T;
+              type?: T;
+              zoom?:
+                | T
+                | {
+                    zoomStart?: T;
+                    zoomEnd?: T;
+                    duration?: T;
+                    enableOnMobile?: T;
+                    brRadius?:
+                      | T
+                      | {
+                          corners?:
+                            | T
+                            | {
+                                topLeft?: T;
+                                topRight?: T;
+                                bottomRight?: T;
+                                bottomLeft?: T;
+                              };
+                          value?: T;
+                        };
+                  };
+            };
       };
   layout?:
     | T
@@ -1086,6 +1396,7 @@ export interface PagesSelect<T extends boolean = true> {
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
+        scroll?: T | ScrollBlockSelect<T>;
       };
   meta?:
     | T
@@ -1182,6 +1493,204 @@ export interface FormBlockSelect<T extends boolean = true> {
   form?: T;
   enableIntro?: T;
   introContent?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ScrollBlock_select".
+ */
+export interface ScrollBlockSelect<T extends boolean = true> {
+  variant?: T;
+  zoomSettings?:
+    | T
+    | {
+        zoomStart?: T;
+        zoomEnd?: T;
+        duration?: T;
+        reverseDuration?: T;
+        borderRadius?: T;
+        smoothness?: T;
+      };
+  textImageSettings?:
+    | T
+    | {
+        items?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              icon?: T;
+              enableCTA?: T;
+              cta?:
+                | T
+                | {
+                    text?: T;
+                    href?: T;
+                    variant?: T;
+                    size?: T;
+                  };
+              id?: T;
+            };
+        foundationText?: T;
+        foundationTextVariant?: T;
+        duration?: T;
+      };
+  tabsSettings?:
+    | T
+    | {
+        items?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              icon?: T;
+              enableCTA?: T;
+              cta?:
+                | T
+                | {
+                    text?: T;
+                    href?: T;
+                    variant?: T;
+                    size?: T;
+                  };
+              id?: T;
+            };
+        tabClickScrollSpeed?: T;
+        imagePosition?: T;
+        landingZone?:
+          | T
+          | {
+              enabled?: T;
+              height?: T;
+              backgroundColor?: T;
+              showTitle?: T;
+              titleText?: T;
+              titleColor?: T;
+              alignment?: T;
+              padding?:
+                | T
+                | {
+                    top?: T;
+                    bottom?: T;
+                    left?: T;
+                    right?: T;
+                  };
+            };
+        duration?: T;
+      };
+  titleScaleSettings?:
+    | T
+    | {
+        title?: T;
+        subtitle?: T;
+        titleAnimation?:
+          | T
+          | {
+              enabled?: T;
+              variant?: T;
+              pinPosition?: T;
+              initialBackground?: T;
+              finalBackground?: T;
+              cloudBackground?: T;
+              overlayOpacity?: T;
+              textColor?: T;
+              darkTextColor?: T;
+              initialScale?: T;
+              pinnedY?: T;
+              exitY?: T;
+              containerHeight?: T;
+            };
+        landingZone?:
+          | T
+          | {
+              enabled?: T;
+              height?: T;
+              backgroundColor?: T;
+              showTitle?: T;
+              titleText?: T;
+              titleColor?: T;
+              alignment?: T;
+              padding?:
+                | T
+                | {
+                    top?: T;
+                    bottom?: T;
+                    left?: T;
+                    right?: T;
+                  };
+            };
+      };
+  bubbleListSettings?:
+    | T
+    | {
+        items?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              icon?: T;
+              enableCTA?: T;
+              cta?:
+                | T
+                | {
+                    text?: T;
+                    href?: T;
+                    variant?: T;
+                    size?: T;
+                  };
+              id?: T;
+            };
+        infinitePhaseText?: T;
+        duration?: T;
+      };
+  background?:
+    | T
+    | {
+        type?: T;
+        color?: T;
+        gradient?: T;
+        image?: T;
+        video?: T;
+        size?: T;
+        position?: T;
+        opacity?: T;
+        carousel?:
+          | T
+          | {
+              images?:
+                | T
+                | {
+                    image?: T;
+                    id?: T;
+                  };
+              speed?: T;
+              autoplay?: T;
+            };
+      };
+  richText?: T;
+  links?:
+    | T
+    | {
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+              appearance?: T;
+            };
+        id?: T;
+      };
+  settings?:
+    | T
+    | {
+        enableOnMobile?: T;
+        reducedMotion?: T;
+        useGPU?: T;
+      };
   id?: T;
   blockName?: T;
 }

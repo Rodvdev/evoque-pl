@@ -6,7 +6,22 @@ import { CMSLink } from '@/components/Link'
 import { Media } from '@/components/Media'
 import RichText from '@/components/RichText'
 
-export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richText }) => {
+export const MediumImpactHero: React.FC<Page['hero']> = (props) => {
+  const { links, media, richText } = props
+  // @ts-expect-error - brRadius is in the type but TypeScript isn't recognizing it yet
+  const borderRadius = props.brRadius
+
+  // Calculate border radius style (using parseInt for select values)
+  const borderRadiusStyle = borderRadius
+    ? {
+        borderTopLeftRadius: `${parseInt(borderRadius.topLeft || '0', 10)}px`,
+        borderTopRightRadius: `${parseInt(borderRadius.topRight || '0', 10)}px`,
+        borderBottomRightRadius: `${parseInt(borderRadius.bottomRight || '0', 10)}px`,
+        borderBottomLeftRadius: `${parseInt(borderRadius.bottomLeft || '0', 10)}px`,
+        overflow: 'hidden' as const,
+      }
+    : {}
+
   return (
     <div className="">
       <div className="container mb-8">
@@ -24,9 +39,9 @@ export const MediumImpactHero: React.FC<Page['hero']> = ({ links, media, richTex
           </ul>
         )}
       </div>
-      <div className="container ">
+      <div className="container">
         {media && typeof media === 'object' && (
-          <div>
+          <div style={borderRadiusStyle}>
             <Media
               className="-mx-4 md:-mx-8 2xl:-mx-16"
               imgClassName=""
