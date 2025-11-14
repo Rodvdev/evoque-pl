@@ -31,7 +31,7 @@ export interface ScrollItem {
   id: string;
   title: string;
   description: RichTextContent;  // Support both string and rich text
-  icon: string;
+  icon: string | { id: number; url?: string; alt?: string; [key: string]: any }; // Support both URL string and Media object
   cta?: ScrollItemCTA;  // Optional CTA button
 }
 

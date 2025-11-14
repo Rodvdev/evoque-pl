@@ -1,4 +1,4 @@
-import type { ScrollBlock as ScrollBlockType } from '@/payload-types'
+import type { ScrollBlock as ScrollBlockType, Media as MediaType } from '@/payload-types'
 import type { ScrollConfig, ScrollItem, LandingZoneConfig } from '@/scroll/types'
 
 /**
@@ -73,7 +73,7 @@ export function convertBackground(
 export function convertScrollItems(items?: Array<{
   title?: string | null
   description?: string | null
-  icon?: number | { id: number } | null
+  icon?: number | MediaType | null
   enableCTA?: boolean | null
   cta?: {
     text?: string | null
@@ -87,17 +87,24 @@ export function convertScrollItems(items?: Array<{
   return items
     .filter((item): item is NonNullable<typeof item> => item != null)
     .map((item, index) => {
-      let iconUrl = ''
+      let icon: string | { id: number; url?: string; alt?: string; [key: string]: any } = ''
+      
       if (item.icon) {
-        const iconId = typeof item.icon === 'number' ? item.icon : item.icon.id
-        iconUrl = `/api/media/file/${iconId}`
+        // If icon is a full Media object (has url property), pass it through
+        if (typeof item.icon === 'object' && 'url' in item.icon && item.icon.url) {
+          icon = item.icon as { id: number; url?: string; alt?: string; [key: string]: any }
+        } else {
+          // Otherwise, convert to URL string for backward compatibility
+          const iconId = typeof item.icon === 'number' ? item.icon : (item.icon as MediaType).id
+          icon = `/api/media/file/${iconId}`
+        }
       }
 
       return {
         id: `item-${index}`,
         title: item.title || '',
         description: item.description || '',
-        icon: iconUrl,
+        icon,
         cta: item.enableCTA && item.cta
           ? {
               text: item.cta.text || '',
@@ -106,7 +113,7 @@ export function convertScrollItems(items?: Array<{
               size: (item.cta.size || 'md') as 'sm' | 'md' | 'lg',
             }
           : undefined,
-      }
+      } as ScrollItem
     })
 }
 

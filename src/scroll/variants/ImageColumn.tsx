@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { Camera } from 'lucide-react';
 import { ScrollItem } from '../types';
 
 /**
@@ -76,14 +77,20 @@ export function ImageColumn({
             }}
           >
             <div className="relative w-full h-full">
-              <Image
-                src={item.icon}
-                alt={item.title}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 300px, 500px"
-                priority={index === 0}
-              />
+              {item.icon && item.icon.trim() !== '' ? (
+                <Image
+                  src={item.icon}
+                  alt={item.title}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 300px, 500px"
+                  priority={index === 0}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                  <Camera className="text-gray-400 dark:text-gray-600" size={48} />
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

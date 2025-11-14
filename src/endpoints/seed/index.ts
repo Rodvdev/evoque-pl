@@ -1,4 +1,6 @@
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import { readFileSync } from 'fs'
+import { join as pathJoin } from 'path'
 
 import { about } from './about'
 import { applicationForm as applicationFormData } from './application-form'
@@ -8,6 +10,7 @@ import { contact as contactPageData } from './contact-page'
 import { home } from './home'
 import { image1 } from './image-1'
 import { image2 } from './image-2'
+import { image3 } from './image-3'
 import { imageHero1 } from './image-hero-1'
 import { join } from './join'
 import { post1 } from './post-1'
@@ -163,22 +166,18 @@ export const seed = async ({
 
   payload.logger.info(`✅ Created 4 users (admin, rodrigo, alberto, demo-author)`)
   payload.logger.info('— Seeding media...')
-  payload.logger.info('  Fetching images from remote URLs...')
+  payload.logger.info('  Reading images from local files...')
 
-  const [image1Buffer, image2Buffer, image3Buffer, hero1Buffer] = await Promise.all([
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post1.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post2.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-post3.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/main/templates/website/src/endpoints/seed/image-hero1.webp',
-    ),
-  ])
+  // Get the directory path for seed images
+  const seedDir = pathJoin(process.cwd(), 'src', 'endpoints', 'seed')
+
+  // Read local image files
+  const [image1Buffer, image2Buffer, image3Buffer, hero1Buffer] = [
+    readLocalFile(pathJoin(seedDir, 'image-post1.webp')),
+    readLocalFile(pathJoin(seedDir, 'image-post2.webp')),
+    readLocalFile(pathJoin(seedDir, 'image-post3.webp')),
+    readLocalFile(pathJoin(seedDir, 'image-hero1.webp')),
+  ]
 
   payload.logger.info('  Creating media documents...')
   const [image1Doc, image2Doc, image3Doc, imageHomeDoc, ...categoryDocs] = await Promise.all([
@@ -194,7 +193,7 @@ export const seed = async ({
     }),
     payload.create({
       collection: 'media',
-      data: image2,
+      data: image3,
       file: image3Buffer,
     }),
     payload.create({
@@ -498,22 +497,19 @@ export const seed = async ({
   payload.logger.info('')
 }
 
-async function fetchFileByURL(url: string): Promise<File> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: 'GET',
-  })
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch file from ${url}, status: ${res.status}`)
-  }
-
-  const data = await res.arrayBuffer()
-
-  return {
-    name: url.split('/').pop() || `file-${Date.now()}`,
-    data: Buffer.from(data),
-    mimetype: `image/${url.split('.').pop()}`,
-    size: data.byteLength,
+function readLocalFile(filePath: string): File {
+  try {
+    const data = readFileSync(filePath)
+    const fileName = filePath.split('/').pop() || filePath.split('\\').pop() || `file-${Date.now()}`
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'webp'
+    
+    return {
+      name: fileName,
+      data: data,
+      mimetype: `image/${extension}`,
+      size: data.length,
+    }
+  } catch (error) {
+    throw new Error(`Failed to read file from ${filePath}: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

@@ -11,13 +11,73 @@ import {
 } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Camera } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Media } from '@/components/Media';
+import type { Media as MediaType } from '@/payload-types';
 
 // Register GSAP plugin
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
+
+// Image component with error handling
+const SafeImage: React.FC<{
+  src: string;
+  alt: string;
+  fill?: boolean;
+  className?: string;
+  sizes?: string;
+  priority?: boolean;
+  onError: () => void;
+}> = ({ src, alt, fill, className, sizes, priority, onError }) => {
+  const [hasError, setHasError] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    setHasError(false);
+    
+    // Use a hidden img element to detect load errors
+    if (!src || src.trim() === '') {
+      setHasError(true);
+      onError();
+      return;
+    }
+    
+    const testImg = new window.Image();
+    testImg.onerror = () => {
+      setHasError(true);
+      onError();
+    };
+    testImg.onload = () => {
+      setHasError(false);
+    };
+    testImg.src = src;
+    
+    return () => {
+      testImg.onerror = null;
+      testImg.onload = null;
+    };
+  }, [src, onError]);
+  
+  if (hasError || !src || src.trim() === '') {
+    return null;
+  }
+  
+  return (
+    <div ref={containerRef} className={fill ? 'absolute inset-0' : ''}>
+      <Image
+        src={src}
+        alt={alt}
+        fill={fill}
+        className={className}
+        sizes={sizes}
+        priority={priority}
+      />
+    </div>
+  );
+};
 
 // Helper function to render rich text description
 const renderDescription = (description: ScrollItem['description']): React.ReactNode => {
@@ -126,13 +186,20 @@ export function TabsScroll({
   isEditing = false,
   children
 }: BaseScrollProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef<HTMLDivElement>(null);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
   const shouldReduceMotion = useReducedMotion();
   
   // Get items from config
   const items: ScrollItem[] = useMemo(() => config.items || [], [config.items]);
+  
+  // Track image load errors
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  
+  // Handle image load errors
+  const handleImageError = (itemId: string) => {
+    setImageErrors((prev) => new Set(prev).add(itemId));
+  };
 
   const enableGPU = config.useGPU !== false;
   const itemCount = items.length;
@@ -165,9 +232,12 @@ export function TabsScroll({
   // Subtract 100vh because pinSpacing: true automatically adds the pinned element's height (100vh)
   const scrollHeight = Math.max(100, itemCount * 80 + 60 - 100); // 80vh per item + 60vh buffer - 100vh for pinSpacing, min 100vh
   
-  // Scroll tracking
+  // Create a ref for the cards section (where pinning will happen)
+  const cardsSectionRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll tracking - now on the cards section instead of container
   const { scrollYProgress } = useScroll({
-    target: containerRef,
+    target: cardsSectionRef,
     offset: ['start start', 'end start']
   });
 
@@ -215,18 +285,29 @@ export function TabsScroll({
     return unsubscribe;
   }, [scrollYProgress, itemCount, ranges]);
 
-  // Setup GSAP pinning for the section
+  // Setup GSAP pinning for the cards section
   useEffect(() => {
-    if (!containerRef.current || !pinnedRef.current || isEditing || shouldReduceMotion) {
+    if (!cardsSectionRef.current || !pinnedRef.current || isEditing || shouldReduceMotion) {
       return;
     }
 
     // Wait for next frame to ensure DOM is fully laid out
     const setupScrollTrigger = () => {
-      if (!containerRef.current || !pinnedRef.current) return;
+      if (!cardsSectionRef.current || !pinnedRef.current) return;
 
-      // Calculate scroll distance to match container height (includes buffer for last tab)
+      // Calculate scroll distance to match cards section height (includes buffer for last tab)
       const scrollDistance = scrollHeight * (window.innerHeight / 100); // Convert vh to pixels
+
+      // Calculate when the last card reaches full opacity
+      // The last card reaches full opacity at its start point (r5.start for card 5)
+      // We want unpinning to start at that point so the last card stays visible
+      const lastItemIndex = itemCount - 1;
+      const lastItemRange = ranges[lastItemIndex];
+      const unpinStartProgress = lastItemRange ? lastItemRange.start : 1;
+      
+      // Calculate the scroll distance that corresponds to when the last card is fully visible
+      // This is the point where we want unpinning to begin
+      const unpinStartDistance = unpinStartProgress * scrollDistance;
 
       // Kill existing ScrollTrigger if any
       if (scrollTriggerRef.current) {
@@ -234,12 +315,12 @@ export function TabsScroll({
         scrollTriggerRef.current = null;
       }
 
-      // Start pinning when the top of the container reaches the top of the viewport
-      // This ensures the section is fully in view before pinning starts
+      // Start pinning when the top of the cards section reaches the top of the viewport
+      // End pinning when the last card reaches full opacity, so it stays visible during unpin
       scrollTriggerRef.current = ScrollTrigger.create({
-        trigger: containerRef.current,
-        start: 'top top', // Start pinning when container top reaches viewport top
-        end: `+=${scrollDistance}`,
+        trigger: cardsSectionRef.current,
+        start: 'top top', // Start pinning when cards section top reaches viewport top
+        end: `+=${unpinStartDistance}`, // Unpin starts when last card is fully visible
         pin: pinnedRef.current,
         pinSpacing: true, // Add proper spacing for smooth scrolling
         anticipatePin: 1,
@@ -259,7 +340,7 @@ export function TabsScroll({
 
     // Handle window resize
     const handleResize = () => {
-      if (scrollTriggerRef.current && containerRef.current && pinnedRef.current) {
+      if (scrollTriggerRef.current && cardsSectionRef.current && pinnedRef.current) {
         ScrollTrigger.refresh();
       }
     };
@@ -274,7 +355,7 @@ export function TabsScroll({
         scrollTriggerRef.current = null;
       }
     };
-  }, [itemCount, isEditing, shouldReduceMotion, scrollHeight]);
+  }, [itemCount, isEditing, shouldReduceMotion, scrollHeight, ranges]);
 
   // Create transform hooks - must call unconditionally (max 6 services)
   const defaultRange = { start: 0, center: 0.5, end: 1 };
@@ -436,7 +517,7 @@ export function TabsScroll({
 
   // Handle tab click - navigate to the center of the clicked card
   const handleTabClick = (index: number) => {
-    if (!containerRef.current || !scrollTriggerRef.current || index < 0 || index >= itemCount) return;
+    if (!cardsSectionRef.current || !scrollTriggerRef.current || index < 0 || index >= itemCount) return;
     
     // Get the range for the clicked card
     const targetRange = ranges[index];
@@ -446,7 +527,7 @@ export function TabsScroll({
     const targetProgress = targetRange.center;
     
     // Calculate scroll position based on ScrollTrigger setup
-    const triggerElement = containerRef.current;
+    const triggerElement = cardsSectionRef.current;
     const scrollDistance = scrollHeight * (window.innerHeight / 100);
     
     // Get the trigger's start position (when ScrollTrigger activates)
@@ -498,12 +579,39 @@ export function TabsScroll({
               <div key={item.id} className="bg-white rounded-2xl p-8">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="relative w-16 h-16">
-                    <Image
-                      src={item.icon}
-                      alt={item.title}
-                      fill
-                      className="object-contain"
-                    />
+                    {(() => {
+                      // Check if icon is a Media object
+                      const isMediaObject = typeof item.icon === 'object' && item.icon !== null && 'url' in item.icon;
+                      const isStringUrl = typeof item.icon === 'string' && item.icon.trim() !== '';
+                      
+                      if (isMediaObject && typeof item.icon === 'object') {
+                        return (
+                          <Media
+                            resource={item.icon as MediaType}
+                            fill
+                            imgClassName="object-contain"
+                          />
+                        );
+                      }
+                      
+                      if (isStringUrl && !imageErrors.has(item.id)) {
+                        return (
+                          <SafeImage
+                            src={item.icon}
+                            alt={item.title}
+                            fill
+                            className="object-contain"
+                            onError={() => handleImageError(item.id)}
+                          />
+                        );
+                      }
+                      
+                      return (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded">
+                          <Camera className="text-gray-400 dark:text-gray-600" size={24} />
+                        </div>
+                      );
+                    })()}
                   </div>
                   <h3 className="text-2xl md:text-3xl font-normal text-gray-900 prose prose-md md:prose-md">
                     {item.title}
@@ -523,36 +631,57 @@ export function TabsScroll({
 
   return (
     <div
-      ref={containerRef}
       className={`relative w-full tabs-scroll-container ${className || ''}`}
       style={{
-        /**
-         * ARCHITECTURE: Tall container (~400-500vh)
-         * Creates scroll space for pinning
-         */
-        height: `${scrollHeight}vh`,
         overflow: 'visible',
         position: 'relative',
+        zIndex: 1, // Ensure proper stacking context
+        isolation: 'isolate', // Create new stacking context
         ...style
       }}
     >
-      {/**
-       * ANIMATION 4: Section pinning
-       * Trigger: Start of scroll zone
-       * Properties: position fixed
-       * Duration: entire scroll distance
-       */}
+      {/* Children content at the top */}
+      {children && (
+        <div className="relative z-10 w-full">
+          {children}
+        </div>
+      )}
+
+      {/* Cards section that will be pinned */}
       <div
-        ref={pinnedRef}
+        ref={cardsSectionRef}
         className="relative w-full"
         style={{
-          // GSAP will pin this element
-          height: '100vh',
-          overflow: 'hidden', // Prevent content from adjacent sections from showing
-          zIndex: 10, // Ensure pinned section stays above adjacent sections
-          backgroundColor: 'transparent' // Will be covered by backgroundElement
+          /**
+           * ARCHITECTURE: Tall container (~400-500vh)
+           * Creates scroll space for pinning
+           * pinSpacing: true in ScrollTrigger will add proper spacing
+           */
+          height: `${scrollHeight}vh`,
+          overflow: 'visible',
+          position: 'relative',
+          zIndex: 1, // Ensure it's in the same stacking context
         }}
       >
+        {/**
+         * ANIMATION 4: Section pinning
+         * Trigger: Start of cards section
+         * Properties: position fixed
+         * Duration: entire scroll distance
+         */}
+        <div
+          ref={pinnedRef}
+          className="relative w-full"
+          style={{
+            // GSAP will pin this element - contains both cards and tabs
+            height: '100vh',
+            overflow: 'hidden', // Prevent content from adjacent sections from showing
+            zIndex: 1, // Lower z-index so subsequent blocks can appear after
+            backgroundColor: 'transparent', // Will be covered by backgroundElement
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
         {/* Background from section - merges with landing zone from previous section */}
         {backgroundElement ? (
           <div className="absolute inset-0 z-0" style={{ overflow: 'hidden' }}>
@@ -564,11 +693,13 @@ export function TabsScroll({
           </div>
         )}
 
-        {/* Layered cards container - centered */}
+        {/* Layered cards container - centered, takes remaining space */}
         <div
-          className="relative w-full h-screen flex items-center justify-center px-4 md:px-8 pb-24 z-10"
+          className="relative w-full flex-1 flex items-center justify-center px-4 md:px-8"
           style={{
-            paddingTop: landingZoneEnabled ? `${landingZoneHeight * 0.5}vh` : 0
+            paddingTop: landingZoneEnabled ? `${landingZoneHeight * 0.5}vh` : 0,
+            zIndex: 1, // Keep within the pinned element's stacking context
+            minHeight: 0, // Allow flexbox to shrink if needed
           }}
         >
 
@@ -613,14 +744,43 @@ export function TabsScroll({
                       {/* Image section - position based on config */}
                       <div className={`flex items-center justify-center p-12 ${imagePosition === 'right' ? 'md:col-start-2' : ''}`}>
                         <div className="relative w-full max-w-sm aspect-square">
-                          <Image
-                            src={item.icon}
-                            alt={item.title}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 300px, 500px"
-                            priority={index === 0}
-                          />
+                          {(() => {
+                            // Check if icon is a Media object
+                            const isMediaObject = typeof item.icon === 'object' && item.icon !== null && 'url' in item.icon;
+                            const isStringUrl = typeof item.icon === 'string' && item.icon.trim() !== '';
+                            
+                            if (isMediaObject && typeof item.icon === 'object') {
+                              return (
+                                <Media
+                                  resource={item.icon as MediaType}
+                                  fill
+                                  imgClassName="object-contain"
+                                  sizes="(max-width: 768px) 300px, 500px"
+                                  priority={index === 0}
+                                />
+                              );
+                            }
+                            
+                            if (isStringUrl && !imageErrors.has(item.id)) {
+                              return (
+                                <SafeImage
+                                  src={item.icon}
+                                  alt={item.title}
+                                  fill
+                                  className="object-contain"
+                                  sizes="(max-width: 768px) 300px, 500px"
+                                  priority={index === 0}
+                                  onError={() => handleImageError(item.id)}
+                                />
+                              );
+                            }
+                            
+                            return (
+                              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                <Camera className="text-gray-400 dark:text-gray-600" size={64} />
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -647,13 +807,15 @@ export function TabsScroll({
         </div>
 
         {/**
-         * ANIMATION 5: Progress indicator (tabs) - centered at bottom
+         * ANIMATION 5: Progress indicator (tabs) - fixed at bottom of pinned section
+         * Tabs stay fixed at bottom while cards scroll through
          */}
         {!isEditing && (
           <div
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100]"
+            className="relative w-full flex justify-center pb-8 z-10"
             style={{
-              transform: 'translateX(-50%)' // Ensure perfect centering
+              flexShrink: 0, // Don't shrink, always stay at bottom
+              zIndex: 10, // Above cards
             }}
           >
             <div className="bg-white/90 backdrop-blur-sm rounded-full shadow-lg px-2 py-2 flex gap-2">
@@ -679,14 +841,8 @@ export function TabsScroll({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Children content */}
-      {children && (
-        <div className="relative z-10">
-          {children}
         </div>
-      )}
+      </div>
     </div>
   );
 }

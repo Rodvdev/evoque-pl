@@ -5,6 +5,7 @@ import type { StaticImageData } from 'next/image'
 import { cn } from '@/utilities/ui'
 import NextImage from 'next/image'
 import React from 'react'
+import { Camera } from 'lucide-react'
 
 import type { Props as MediaProps } from '../types'
 
@@ -33,7 +34,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   let width: number | undefined
   let height: number | undefined
   let alt = altFromProps
-  let src: StaticImageData | string = srcFromProps || ''
+  let src: StaticImageData | string | null = srcFromProps || null
 
   if (!src && resource && typeof resource === 'object') {
     const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
@@ -45,6 +46,40 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
     const cacheTag = resource.updatedAt
 
     src = getMediaUrl(url, cacheTag)
+  }
+
+  // Check if src is empty or invalid
+  const isValidSrc = src && (
+    (typeof src === 'string' && src.trim() !== '') ||
+    (typeof src === 'object' && 'src' in src)
+  )
+
+  // If no valid src, render fallback with Camera icon
+  if (!isValidSrc) {
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-center bg-gray-100 dark:bg-gray-800',
+          pictureClassName,
+          fill && 'absolute inset-0'
+        )}
+        style={
+          fill
+            ? { position: 'absolute', inset: 0 }
+            : width && height
+              ? { width, height }
+              : undefined
+        }
+      >
+        <Camera
+          className={cn(
+            'text-gray-400 dark:text-gray-600',
+            imgClassName
+          )}
+          size={fill ? 48 : Math.min(width || 48, height || 48, 48)}
+        />
+      </div>
+    )
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
